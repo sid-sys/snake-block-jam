@@ -276,18 +276,20 @@ namespace SnakeJam
             if (shape == "ElephantBig") return ElephantMask(out w, out h);
             if (shape == "Elephant")
             {
-                // small elephant (13 x 10) so the cells stay big enough to tap on a phone
-                h = ElephantSmallArt.Length; w = ElephantSmallArt[0].Length;
+                // small elephant, turned to stand tall (10 wide x 13 high) so it fills a portrait phone screen
+                w = ElephantSmallArt.Length; int ch = ElephantSmallArt[0].Length;
+                h = Mathf.RoundToInt(ch * 1.4f);            // stretched a little taller to fill the screen
                 var m = new bool[w, h];
-                for (int r = 0; r < h; r++)
-                    for (int c = 0; c < w; c++)
-                        m[c, h - 1 - r] = ElephantSmallArt[r][c] == 'X';
+                for (int r = 0; r < w; r++)
+                    for (int c = 0; c < h; c++)
+                        m[w - 1 - r, c] = ElephantSmallArt[r][Mathf.Min(ch - 1, Mathf.FloorToInt(c / 1.4f))] == 'X';
                 return m;
             }
             if (shape == "Castle") return CastleMask(out w, out h);
             w = n; h = n;
             // phone screens are tall: normal level shapes are drawn 3:4 portrait so the board fills the screen (about the same cell count)
-            if (shape != "Road" && shape != "Flower") { w = Mathf.Max(4, Mathf.RoundToInt(n * 0.85f)); h = Mathf.Max(5, Mathf.RoundToInt(n * 1.25f)); }
+            // (width : height about 0.55, the shape of the free screen area, with about the same number of cells)
+            if (shape != "Road" && shape != "Flower") { w = Mathf.Max(4, Mathf.RoundToInt(n * 0.72f)); h = Mathf.Max(7, Mathf.RoundToInt(n * 1.45f)); }
             if (shape == "Road") { w = n; h = n - 4; }
             var mask = new bool[w, h];
             float cx = (w - 1) / 2f, cy = (h - 1) / 2f;
