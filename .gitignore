@@ -1,0 +1,80 @@
+# Unity generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emory[Cc]aptures/
+/[Rr]ecordings/
+*.log
+
+# Unity autosave backup scene
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+
+# IDE / generated project files
+/.vs/
+/.vscode/
+/.idea/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.pidb
+*.booproj
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets (keys live outside the project in D:\UNITY GAMES\.env.local)
+.env
+.env.*
+
+# Demo / sample content of Unity Asset Store packages (re-import from the package if needed). Kept on disk, not in git.
+/Assets/Feel/FeelDemos/
+/Assets/Feel/FeelDemos.meta
+/Assets/Feel/FeelDemosHDRP/
+/Assets/Feel/FeelDemosHDRP.meta
+/Assets/Feel/MMTools/Demos/
+/Assets/Feel/MMTools/Demos.meta
+/Assets/Feel/MMFeedbacks/Demos/
+/Assets/Feel/MMFeedbacks/Demos.meta
+/Assets/Feel/NiceVibrations/Demo/
+/Assets/Feel/NiceVibrations/Demo.meta
+/Assets/JMO Assets/Cartoon FX Remaster/Demo Assets/
+/Assets/JMO Assets/Cartoon FX Remaster/Demo Assets.meta
+
+# Not needed to run the app (kept on disk, not in git)
+/Assets/JMO Assets/
+/Assets/JMO Assets.meta
+/Assets/Art/
+/Assets/Art.meta
+/Assets/Welcome/
+/Assets/Welcome.meta
+/Assets/Feel/Skills/
+/Assets/Feel/Skills.meta
+/Assets/Feel/NiceVibrations/HapticSamples/
+/Assets/Feel/NiceVibrations/HapticSamples.meta
+/Assets/Feel/NiceVibrations/OlderVersions/
+/Assets/Feel/NiceVibrations/OlderVersions.meta
+
+# Screenshots and captures
+/Screenshots/
+/Screenshots.meta
+*.screenshot.png
+
+# Sample textures / effects of the Feel package (only its one script is kept)
+/Assets/Feel/MMTools/Accessories/MMVFX/*
+!/Assets/Feel/MMTools/Accessories/MMVFX/Scripts/
+!/Assets/Feel/MMTools/Accessories/MMVFX/Scripts.meta
+/Assets/Feel/MMTools/Accessories/MMPrototypeTextures/
+/Assets/Feel/MMTools/Accessories/MMPrototypeTextures.meta

@@ -1,0 +1,154 @@
+using System.Collections.Generic;
+using DG.Tweening;
+using TMPro;
+using MoreMountains.Feedbacks;
+using UnityEngine;
+
+namespace SnakeJam
+{
+    public static class Art
+    {
+        static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
+        static Sprite circle, round;
+
+        public static Sprite Get(string name)
+        {
+            if (cache.TryGetValue(name, out var s) && s != null) return s;
+            s = Resources.Load<Sprite>("Sprites/" + name);
+            if (s == null) Debug.LogWarning("Missing sprite: " + name);
+            cache[name] = s;
+            return s;
+        }
+
+        public static Font Font => font != null ? font : (font = Resources.Load<Font>("Fonts/Heavy"));
+        static Font font;
+
+        static TMP_FontAsset tmpFont; static Material tmpShadow;
+        // TextMeshPro font made from the Lato Heavy file; characters are added on demand
+        public static TMP_FontAsset TmpFont
+        {
+            get
+            {
+                if (tmpFont == null)
+                {
+                    tmpFont = TMP_FontAsset.CreateFontAsset(Font, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024);
+                    tmpFont.name = "Lato Heavy SDF";
+                }
+                return tmpFont;
+            }
+        }
+        // same font with a soft drop shadow (underlay) shared by all labels
+        public static Material TmpShadowMaterial
+        {
+            get
+            {
+                if (tmpShadow == null)
+                {
+                    tmpShadow = new Material(TmpFont.material) { name = "Lato Heavy SDF Shadow" };
+                    tmpShadow.EnableKeyword(ShaderUtilities.Keyword_Underlay);
+                    tmpShadow.SetColor(ShaderUtilities.ID_UnderlayColor, new Color(0.05f, 0.02f, 0.2f, 0.38f));
+                    tmpShadow.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, 0f);
+                    tmpShadow.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, -0.45f);
+                    tmpShadow.SetFloat(ShaderUtilities.ID_UnderlayDilate, 0.15f);
+                    tmpShadow.SetFloat(ShaderUtilities.ID_UnderlaySoftness, 0.35f);
+                }
+                return tmpShadow;
+            }
+        }
+
+        public static Sprite Circle
+        {
+            get
+            {
+                if (circle != null) return circle;
+                const int N = 64;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                var px = new Color[N * N];
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(N / 2f, N / 2f));
+                        px[y * N + x] = new Color(1, 1, 1, Mathf.Clamp01(N / 2f - d));
+                    }
+                t.SetPixels(px); t.Apply();
+                return circle = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 64f);
+            }
+        }
+
+        static Sprite glow;
+        // soft round glow (bright centre, fades to nothing)
+        public static Sprite Glow
+        {
+            get
+            {
+                if (glow != null) return glow;
+                const int N = 128;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float r = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(N / 2f, N / 2f)) / (N / 2f);
+                        float a = Mathf.Clamp01(1f - r); a *= a;
+                        t.SetPixel(x, y, new Color(1, 1, 1, a));
+                    }
+                t.Apply();
+                return glow = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f);
+            }
+        }
+
+        // white rounded square with 9-slice border, tint it with a colour (no outline)
+        public static Sprite Round
+        {
+            get
+            {
+                if (round != null) return round;
+                const int N = 64; const float R = 22f;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                var px = new Color[N * N];
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float qx = Mathf.Abs(x + 0.5f - N / 2f) - (N / 2f - R);
+                        float qy = Mathf.Abs(y + 0.5f - N / 2f) - (N / 2f - R);
+                        float dist = Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0)) + Mathf.Min(Mathf.Max(qx, qy), 0) - R;
+                        px[y * N + x] = new Color(1, 1, 1, Mathf.Clamp01(0.5f - dist));
+                    }
+                t.SetPixels(px); t.Apply();
+                return round = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 64f, 0, SpriteMeshType.FullRect, new Vector4(24, 24, 24, 24));
+            }
+        }
+    }
+
+    public static class Fx
+    {
+        public static Transform Root;
+
+        public static void Burst(Vector3 pos, Color col, int count, float radius, float dur, float size = 0.16f, Sprite sprite = null, int order = 30)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var go = new GameObject("fx");
+                go.transform.SetParent(Root, false);
+                go.transform.position = pos;
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = sprite != null ? sprite : Art.Circle;
+                sr.color = col; sr.sortingOrder = order;
+                float sc = size * Random.Range(0.6f, 1.2f);
+                go.transform.localScale = Vector3.one * sc;
+                float ang = Random.value * Mathf.PI * 2f;
+                var target = pos + new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0) * radius * Random.Range(0.5f, 1f);
+                var seq = DOTween.Sequence();
+                seq.Join(go.transform.DOMove(target, dur).SetEase(Ease.OutQuad));
+                seq.Join(sr.DOFade(0f, dur).SetEase(Ease.InQuad));
+                seq.Join(go.transform.DOScale(sc * 0.3f, dur));
+                seq.OnComplete(() => Object.Destroy(go));
+            }
+        }
+
+        public static void Shake(float strength, float dur)
+        {
+            // Feel camera shaker (MMCameraShaker sits on the camera)
+            MMCameraShakeEvent.Trigger(dur, strength, 45f, 0f, 0f, 0f, false, null, false);
+        }
+    }
+}
