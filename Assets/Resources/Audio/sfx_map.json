@@ -1,0 +1,247 @@
+{
+    "entries": [
+        {
+            "ev": "tap",
+            "file": "Candy__Short_click17",
+            "cat": "Candy",
+            "sub": "Short_click",
+            "orig": "Short_click17.wav",
+            "where": "Tap a snake on the board",
+            "dur": 0.25
+        },
+        {
+            "ev": "ui_click",
+            "file": "UserInterface__Click022",
+            "cat": "UserInterface",
+            "sub": "Click",
+            "orig": "Click022.wav",
+            "where": "Any menu button",
+            "dur": 0.14000000059604645
+        },
+        {
+            "ev": "slide",
+            "file": "JumpAndRun__Bling014",
+            "cat": "JumpAndRun",
+            "sub": "Bling",
+            "orig": "Bling014.wav",
+            "where": "A snake slides (move, bump slide, leaving the board)",
+            "dur": 2.0
+        },
+        {
+            "ev": "escape",
+            "file": "JumpAndRun__Bling010",
+            "cat": "JumpAndRun",
+            "sub": "Bling",
+            "orig": "Bling010.wav",
+            "where": "Snake leaves the board (chime)",
+            "dur": 2.0
+        },
+        {
+            "ev": "bump",
+            "file": "Match3__SquishyPops06",
+            "cat": "Match3",
+            "sub": "SquishyPops",
+            "orig": "SquishyPops06.wav",
+            "where": "Snake hits another snake",
+            "dur": 1.0
+        },
+        {
+            "ev": "thud",
+            "file": "Match3__SquishyPops10",
+            "cat": "Match3",
+            "sub": "SquishyPops",
+            "orig": "SquishyPops10.wav",
+            "where": "Soft thud layered on every hit",
+            "dur": 0.44999998807907104
+        },
+        {
+            "ev": "locked",
+            "file": "UserInterface__Cancel129",
+            "cat": "UserInterface",
+            "sub": "Cancel",
+            "orig": "Cancel129.wav",
+            "where": "Tap a frozen snake",
+            "dur": 2.0
+        },
+        {
+            "ev": "coin",
+            "file": "Candy__CollectingCoins11",
+            "cat": "Candy",
+            "sub": "CollectingCoins",
+            "orig": "CollectingCoins11.wav",
+            "where": "Coins fly into the coin counter",
+            "dur": 0.8700000047683716
+        },
+        {
+            "ev": "win",
+            "file": "Candy__Win12",
+            "cat": "Candy",
+            "sub": "Win",
+            "orig": "Win12.wav",
+            "where": "Board cleared",
+            "dur": 2.3399999141693115
+        },
+        {
+            "ev": "complete",
+            "file": "Candy__Fanfares21",
+            "cat": "Candy",
+            "sub": "Fanfares",
+            "orig": "Fanfares21.wav",
+            "where": "Level complete popup",
+            "dur": 2.5199999809265137
+        },
+        {
+            "ev": "pop",
+            "file": "Match3__JuicyPops213",
+            "cat": "Match3",
+            "sub": "JuicyPops",
+            "orig": "JuicyPops213.wav",
+            "where": "Stars and the ALL CLEAR banner pop in",
+            "dur": 0.4000000059604645
+        },
+        {
+            "ev": "buy",
+            "file": "Casino__Money13",
+            "cat": "Casino",
+            "sub": "Money",
+            "orig": "Money13.wav",
+            "where": "Buy or claim in the shop / daily gift",
+            "dur": 0.9399999976158142
+        },
+        {
+            "ev": "hint",
+            "file": "UserInterface__Click010",
+            "cat": "UserInterface",
+            "sub": "Click",
+            "orig": "Click010.wav",
+            "where": "Hint power-up",
+            "dur": 0.8600000143051147
+        },
+        {
+            "ev": "undo",
+            "file": "Candy__Blup19",
+            "cat": "Candy",
+            "sub": "Blup",
+            "orig": "Blup19.wav",
+            "where": "Undo power-up",
+            "dur": 0.3499999940395355
+        },
+        {
+            "ev": "vacuum",
+            "file": "UserInterface__SwooshAndHover001",
+            "cat": "UserInterface",
+            "sub": "SwooshAndHover",
+            "orig": "SwooshAndHover001.wav",
+            "where": "Vacuum power-up",
+            "dur": 2.0
+        },
+        {
+            "ev": "drill",
+            "file": "Candy__LittleCarEngine07_loop",
+            "cat": "Candy",
+            "sub": "LittleCarEngine",
+            "orig": "LittleCarEngine07_loop.wav",
+            "where": "Drill snake drilling a rock",
+            "dur": 1.0700000524520874
+        },
+        {
+            "ev": "rock",
+            "file": "Weapons__ExplosionWithDebris001",
+            "cat": "Weapons",
+            "sub": "ExplosionWithDebris",
+            "orig": "ExplosionWithDebris001.wav",
+            "where": "Rock breaks",
+            "dur": 0.7900000214576721
+        },
+        {
+            "ev": "thaw",
+            "file": "Candy__BreakingGlass25",
+            "cat": "Candy",
+            "sub": "BreakingGlass",
+            "orig": "BreakingGlass25.wav",
+            "where": "Frozen snake melts",
+            "dur": 1.090000033378601
+        },
+        {
+            "ev": "light",
+            "file": "Casino__PushAButton09",
+            "cat": "Casino",
+            "sub": "PushAButton",
+            "orig": "PushAButton09.wav",
+            "where": "Traffic lights flip",
+            "dur": 0.30000001192092896
+        },
+        {
+            "ev": "popup_open",
+            "file": "Candy__Open_menue04",
+            "cat": "Candy",
+            "sub": "Open_menue",
+            "orig": "Open_menue04.wav",
+            "where": "Popup opens",
+            "dur": 0.5199999809265137
+        },
+        {
+            "ev": "popup_close",
+            "file": "Candy__Closing_menue10",
+            "cat": "Candy",
+            "sub": "Closing_menue",
+            "orig": "Closing_menue10.wav",
+            "where": "Popup closes",
+            "dur": 0.4000000059604645
+        },
+        {
+            "ev": "fail",
+            "file": "Candy__Loose16",
+            "cat": "Candy",
+            "sub": "Loose",
+            "orig": "Loose16.wav",
+            "where": "Out of moves popup",
+            "dur": 1.7300000190734863
+        },
+        {
+            "ev": "v_great",
+            "file": "TypicalPhrases__002_Great",
+            "cat": "TypicalPhrases",
+            "sub": "Great",
+            "orig": "002_Great.wav",
+            "where": "Voice for the Great! praise word",
+            "dur": 1.0800000429153442
+        },
+        {
+            "ev": "v_amazing",
+            "file": "TypicalPhrases__004_Amazing",
+            "cat": "TypicalPhrases",
+            "sub": "Amazing",
+            "orig": "004_Amazing.wav",
+            "where": "Voice for the Amazing! praise word",
+            "dur": 1.4900000095367432
+        },
+        {
+            "ev": "v_awesome",
+            "file": "TypicalPhrases__003_Awesome",
+            "cat": "TypicalPhrases",
+            "sub": "Awesome",
+            "orig": "003_Awesome.wav",
+            "where": "Voice for the Awesome! praise word",
+            "dur": 1.2400000095367432
+        },
+        {
+            "ev": "v_perfect",
+            "file": "TypicalPhrases__014_Perfect",
+            "cat": "TypicalPhrases",
+            "sub": "Perfect",
+            "orig": "014_Perfect.wav",
+            "where": "Voice for the Perfect! praise word",
+            "dur": 1.4500000476837158
+        },
+        {
+            "ev": "v_allclear",
+            "file": "TypicalPhrases__033_Cleared",
+            "cat": "TypicalPhrases",
+            "sub": "Cleared",
+            "orig": "033_Cleared.wav",
+            "where": "Voice for ALL CLEAR!",
+            "dur": 1.409999966621399
+        }
+    ]
+}
