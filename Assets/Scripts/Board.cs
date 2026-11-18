@@ -20,7 +20,7 @@ namespace SnakeJam
         public int Total { get; private set; }
         public bool Won => won;
         public float Zoom => zoom;
-        public bool NeedsZoom => data != null && (data.w > 13 || data.h > 21);
+        public bool NeedsZoom { get; private set; }   // board too big to show with big cells: starts zoomed in, zoom buttons are shown
 
         public event Action OnWin;                 // board is empty
         public event Action OnChanged;
@@ -222,22 +222,32 @@ namespace SnakeJam
             // canvas is 1080 units wide (match width), so its height is 1080 / aspect. The board gets the free rectangle
             // between the top bar (resTop) and the bottom bar (resBot), centred in it.
             float Hc = 1080f / aspect;
-            float bot = resBot + (NeedsZoom ? resZoomRow : 0f);
-            float avail = Mathf.Max(300f, Hc - resTop - bot);
-            float byH = (data.h + 0.8f) * Hc / (2f * avail);
-            float byW = (data.w + 0.8f) / (2f * aspect * (1020f / 1080f));
             float minW = 6f / (2f * aspect);
-            float full = Mathf.Max(byH, byW, minW);
-            if (data.giant)
+            float byW = (data.w + 0.8f) / (2f * aspect * (1020f / 1080f));
+            float bot = resBot;
+            float full = 0f;
+            for (int pass = 0; pass < 2; pass++)
             {
-                // giant map: start zoomed in (about 14 cells across); zoom out to see the whole map
-                baseOrtho = Mathf.Min(full, (14f + 0.8f) / (2f * aspect * (1020f / 1080f)));
+                float avail = Mathf.Max(300f, Hc - resTop - bot);
+                float byH = (data.h + 0.8f) * Hc / (2f * avail);
+                full = Mathf.Max(byH, byW, minW);
+                // a cell must stay big enough to tap: below MinCell canvas units the map starts zoomed in and the player pans / zooms
+                float startOrtho = Hc / (2f * MinCell);
+                NeedsZoom = full > startOrtho + 0.001f;
+                if (pass == 0 && NeedsZoom) bot = resBot + resZoomRow;   // the zoom buttons take a row above the bottom bar
+                else break;
+            }
+            if (NeedsZoom)
+            {
+                baseOrtho = Hc / (2f * MinCell);
                 minZoom = baseOrtho / full;
             }
             else { baseOrtho = full; minZoom = 1f; }
             shiftCanvas = (bot - resTop) * 0.5f;   // how far (canvas units) the board centre sits above the screen centre
             ApplyCamera();
         }
+
+        const float MinCell = 70f;   // smallest cell (canvas units, 1080 wide) at the start of a level: about 47 px on a 720 px wide phone
 
         // set by the HUD: canvas units kept free at the top, at the bottom, and for the zoom row on giant maps
         public float resTop = 200f, resBot = 240f, resZoomRow = 130f;

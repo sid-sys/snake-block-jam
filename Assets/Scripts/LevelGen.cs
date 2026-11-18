@@ -184,6 +184,20 @@ namespace SnakeJam
         static readonly Vector2Int[] Dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
 
         // ---------------------------------------------------------------- shapes
+        static readonly string[] ElephantSmallArt =
+        {
+            "...XXXXXXX...",
+            "..XXXXXXXXX..",
+            ".XXXXXXXXXXX.",
+            "XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXX",
+            "XXXXXXXXXXXXX",
+            ".XXXXXXXXXXXX",
+            ".XXX.XXX.XXX.",
+            ".XXX.XXX.XXX.",
+            ".XXX.XXX.XXXX",
+        };
+
         static readonly string[] ElephantArt =
         {
             "....XXXXXXXXX......",
@@ -262,11 +276,12 @@ namespace SnakeJam
             if (shape == "ElephantBig") return ElephantMask(out w, out h);
             if (shape == "Elephant")
             {
-                h = ElephantArt.Length; w = ElephantArt[0].Length;
+                // small elephant (13 x 10) so the cells stay big enough to tap on a phone
+                h = ElephantSmallArt.Length; w = ElephantSmallArt[0].Length;
                 var m = new bool[w, h];
                 for (int r = 0; r < h; r++)
                     for (int c = 0; c < w; c++)
-                        m[c, h - 1 - r] = ElephantArt[r][c] == 'X';
+                        m[c, h - 1 - r] = ElephantSmallArt[r][c] == 'X';
                 return m;
             }
             if (shape == "Castle") return CastleMask(out w, out h);
