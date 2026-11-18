@@ -462,6 +462,19 @@ namespace SnakeJam
                 }
             }
 
+            // how many cells lie between a cell and the nearest edge of the shape (4 directions)
+            int Depth(Vector2Int c)
+            {
+                int best = int.MaxValue;
+                foreach (var dir in Dirs)
+                {
+                    int k = 0; var p = c + dir;
+                    while (R.InB(p) && d.mask[p.x, p.y]) { k++; p += dir; }
+                    if (k < best) best = k;
+                }
+                return best;
+            }
+
             public void Run()
             {
                 foreach (var rcell in d.roads)
@@ -514,7 +527,25 @@ namespace SnakeJam
                             if (Free(c) && !d.bridges.Contains(c) && !occ.ContainsKey(Rules.Key(c, 0))) empties.Add(c);
                         }
                     if (empties.Count < p.minLen) break;
+                    // spread the snakes evenly: snakes placed first can be blocked by later ones, snakes placed last need a clear way out.
+                    // So start in the middle (deepest cells) and finish at the edges; this stops empty bands from forming in the middle.
+                    // and pick the empty cell farthest from every snake already placed, so no part of the board stays bare.
                     var head = empties[rng.Next(empties.Count)];
+                    int bestScore = -1, bestFar = 0;
+                    for (int s = 0; s < 12; s++)
+                    {
+                        var cand = empties[rng.Next(empties.Count)];
+                        int far = 99;
+                        foreach (var sn in d.snakes)
+                            foreach (var sc in sn.cells)
+                            {
+                                int dd = Mathf.Max(Mathf.Abs(sc.x - cand.x), Mathf.Abs(sc.y - cand.y));
+                                if (dd < far) far = dd;
+                            }
+                        int score = far * 4 + Mathf.Min(Depth(cand), 3);
+                        if (score > bestScore) { bestScore = score; head = cand; bestFar = far; }
+                    }
+                    if (bestFar <= 2 || fails > 0 && rng.Next(3) == 0) head = empties[rng.Next(empties.Count)];   // gaps are small now: any free cell will do
                     var dirs = new List<Vector2Int>(Dirs);
                     for (int i = dirs.Count - 1; i > 0; i--) { int j = rng.Next(i + 1); var t = dirs[i]; dirs[i] = dirs[j]; dirs[j] = t; }
                     bool placed = false;
@@ -525,6 +556,44 @@ namespace SnakeJam
                         if (TryPlace(cells)) { placed = true; break; }
                     }
                     if (!placed) fails++;
+                }
+                // gap fill: try every free cell in every direction, emptiest places first, with shorter snakes too.
+                for (int pass = 0; pass < 6 && d.snakes.Count < p.cap && occ.Count < total * Mathf.Min(0.97f, p.fill + 0.12f); pass++)
+                {
+                    var cand = new List<(Vector2Int c, int far)>();
+                    for (int x = 0; x < d.w; x++)
+                        for (int y = 0; y < d.h; y++)
+                        {
+                            var c = new Vector2Int(x, y);
+                            if (!Free(c) || d.bridges.Contains(c) || occ.ContainsKey(Rules.Key(c, 0))) continue;
+                            int far = 99;
+                            foreach (var sn in d.snakes)
+                                foreach (var sc in sn.cells)
+                                {
+                                    int dd = Mathf.Max(Mathf.Abs(sc.x - c.x), Mathf.Abs(sc.y - c.y));
+                                    if (dd < far) far = dd;
+                                }
+                            cand.Add((c, far * 100 + rng.Next(100)));
+                        }
+                    cand.Sort((a, b) => b.far.CompareTo(a.far));
+                    int added = 0;
+                    foreach (var cd in cand)
+                    {
+                        if (d.snakes.Count >= p.cap || occ.Count >= total * Mathf.Min(0.97f, p.fill + 0.12f)) break;
+                        if (occ.ContainsKey(Rules.Key(cd.c, 0)) || !Free(cd.c)) continue;
+                        bool ok = false;
+                        foreach (var dir in Dirs)
+                        {
+                            for (int len = p.maxLen; len >= 2 && !ok; len -= Mathf.Max(1, (p.maxLen - 2) / 3))
+                            {
+                                var cells = Walk(cd.c, dir, Mathf.Max(2, len));
+                                if (cells != null && cells.Count >= 2 && TryPlace(cells)) ok = true;
+                            }
+                            if (ok) break;
+                        }
+                        if (ok) added++;
+                    }
+                    if (added == 0) break;
                 }
             }
         }

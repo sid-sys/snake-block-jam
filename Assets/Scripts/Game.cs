@@ -29,7 +29,7 @@ namespace SnakeJam
         readonly List<TMP_Text> coinTexts = new List<TMP_Text>();
         readonly List<TMP_Text> gemTexts = new List<TMP_Text>();
         RectTransform hudCoinChip, mapCoinChip;
-        TMP_Text livesTxt, timerTxt, movesTxt, levelLblTxt, banner, loadingTxt;
+        TMP_Text hudLivesTxt, livesTxt, timerTxt, movesTxt, levelLblTxt, banner, loadingTxt;
         Image movesBox, loadFill, hand, edgeFlash;
         RectTransform topBar, bottomBar, zoomBtns;
         CanvasGroup mapGroup, hudGroup;
@@ -234,24 +234,27 @@ namespace SnakeJam
             }
             float top = SafeTop(), bottom = SafeBottom();
 
-            UIKit.Icon(mapRoot, "avatar", new Vector2(110, 110), new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -(30 + top)));
-            BuildChip(mapRoot, "icon_coin", new Vector2(150, -(40 + top)), new Vector2(290, 90), true, coinTexts, out mapCoinChip);
-            BuildChip(mapRoot, "icon_gem", new Vector2(460, -(40 + top)), new Vector2(210, 90), false, gemTexts, out _);
+            // top row: money and lives only, five items with equal gaps (28 | 110 | 270 | 190 | 220 | 100 | 30, gaps of 33)
+            UIKit.Icon(mapRoot, "avatar", new Vector2(110, 110), new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -(30 + top)));
+            BuildChip(mapRoot, "icon_coin", new Vector2(171, -(40 + top)), new Vector2(270, 90), true, coinTexts, out mapCoinChip);
+            BuildChip(mapRoot, "icon_gem", new Vector2(474, -(40 + top)), new Vector2(190, 90), false, gemTexts, out _);
 
-            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(690, -(40 + top)), new Vector2(240, 90), UIKit.Chip, "LivesChip");
+            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(697, -(40 + top)), new Vector2(220, 90), UIKit.Chip, "LivesChip");
             UIKit.Icon(lc.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             livesTxt = UIKit.Label(lc.transform, "5", 44, Color.white);
             livesTxt.rectTransform.offsetMin = new Vector2(70, 0); livesTxt.rectTransform.offsetMax = new Vector2(-90, 0);
-            timerTxt = UIKit.Label(lc.transform, "", 30, Color.white);
-            timerTxt.rectTransform.offsetMin = new Vector2(110, 0); timerTxt.rectTransform.offsetMax = new Vector2(0, 0);
+            timerTxt = UIKit.Label(lc.transform, "", 28, Color.white);
+            timerTxt.rectTransform.offsetMin = new Vector2(100, 0); timerTxt.rectTransform.offsetMax = new Vector2(0, 0);
             timerTxt.alignment = TextAlignmentOptions.Center;
 
-            UIKit.Pill(mapRoot, "", "blue", new Vector2(120, 90), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -(40 + top)), OpenSettings, "icon_gear", 30);
-            UIKit.Pill(mapRoot, "SHOP", "orange", new Vector2(250, 100), new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -(190 + top)), () => OpenShop(0), "icon_shop", 38);
-            UIKit.Pill(mapRoot, "GIFT", "purple", new Vector2(250, 100), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -(190 + top)), OpenGift, "icon_gift", 38);
+            UIKit.Pill(mapRoot, "", "blue", new Vector2(100, 90), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -(40 + top)), OpenSettings, "icon_gear", 30);
 
+            // bottom row: SHOP | PLAY | GIFT (the middle of the screen belongs to the level path)
             nodesRoot = UIKit.Stretch(mapRoot, "Nodes");
-            UIKit.Pill(mapRoot, "PLAY", "green", new Vector2(560, 170), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 90 + bottom), OnPlayPressed, null, 80);
+            float ny = 90 + bottom;
+            UIKit.Pill(mapRoot, "SHOP", "orange", new Vector2(270, 150), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-370, ny), () => OpenShop(0), "icon_shop", 40);
+            UIKit.Pill(mapRoot, "PLAY", "green", new Vector2(400, 170), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, ny), OnPlayPressed, null, 80);
+            UIKit.Pill(mapRoot, "GIFT", "purple", new Vector2(270, 150), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(370, ny), OpenGift, "icon_gift", 40);
         }
 
         void ShowMap()
@@ -277,10 +280,11 @@ namespace SnakeJam
             int cur = Save.S.level;
             float bottom = SafeBottom();
             // spread the 5 level nodes evenly between the PLAY button and the top buttons
-            float firstY = 560f + bottom;
-            float lastY = CanvasH - 480f - SafeTop();
-            float step = Mathf.Clamp((lastY - firstY) / 4f, 220f, 380f);
-            var line = UIKit.Panel(nodesRoot, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, firstY - 230f), new Vector2(26, step * 4f + 230f + 160f), new Color(0.07f, 0.08f, 0.3f, 0.7f), "Line");
+            float firstY = 470f + bottom;                 // above the bottom row (SHOP / PLAY / GIFT)
+            float lastY = CanvasH - 330f - SafeTop();     // below the top row
+            float step = Mathf.Clamp((lastY - firstY) / 4f, 220f, 420f);
+            float lineBottom = firstY - 130f;
+            var line = UIKit.Panel(nodesRoot, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, lineBottom), new Vector2(26, (firstY + step * 4f + 130f) - lineBottom), new Color(0.07f, 0.08f, 0.3f, 0.7f), "Line");
             for (int i = 0; i < 5; i++)
             {
                 int lvl = cur + i;
@@ -311,6 +315,7 @@ namespace SnakeJam
         {
             if (livesTxt == null) return;
             livesTxt.text = Save.S.lives.ToString();
+            if (hudLivesTxt != null) hudLivesTxt.text = Save.S.lives.ToString();
             int s = Save.SecondsToNextLife();
             timerTxt.text = s > 0 ? (s / 60).ToString("00") + ":" + (s % 60).ToString("00") : "FULL";
         }
@@ -324,17 +329,23 @@ namespace SnakeJam
             bottomBar = UIKit.Stretch(hudRoot, "BottomBar");
             float top = SafeTop(), bottom = SafeBottom();
 
-            BuildChip(topBar, "icon_coin", new Vector2(30, -(40 + top)), new Vector2(290, 90), true, coinTexts, out hudCoinChip);
+            // top row, four items with equal gaps: coins | moves + level | lives | settings
+            BuildChip(topBar, "icon_coin", new Vector2(30, -(40 + top)), new Vector2(260, 90), true, coinTexts, out hudCoinChip);
 
-            movesBox = UIKit.Panel(topBar, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(88, -(34 + top)), new Vector2(330, 120), new Color(0.18f, 0.78f, 0.55f), "MovesBox");
+            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(343, -(34 + top)), new Vector2(300, 120), new Color(0.18f, 0.78f, 0.55f), "MovesBox");
             movesTxt = UIKit.Label(movesBox.transform, "Moves: 0", 46, Color.white);
             movesTxt.rectTransform.offsetMin = new Vector2(0, 28);
             levelLblTxt = UIKit.Label(movesBox.transform, "Level 1", 28, Color.white);
             levelLblTxt.rectTransform.offsetMax = new Vector2(0, -78);
 
-            UIKit.Pill(topBar, "", "blue", new Vector2(120, 90), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -(40 + top)), OpenSettings, "icon_gear", 30);
+            var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(696, -(40 + top)), new Vector2(190, 90), UIKit.Chip, "LivesChip");
+            UIKit.Icon(hl.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0));
+            hudLivesTxt = UIKit.Label(hl.transform, Save.S.lives.ToString(), 46, Color.white);
+            hudLivesTxt.rectTransform.offsetMin = new Vector2(70, 0);
 
-            banner = UIKit.Label(hudRoot, "Tap a snake to vacuum it", 44, new Color(0.25f, 0.2f, 0.55f));
+            UIKit.Pill(topBar, "", "blue", new Vector2(110, 90), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-31, -(40 + top)), OpenSettings, "icon_gear", 30);
+
+            banner =UIKit.Label(hudRoot, "Tap a snake to vacuum it", 44, new Color(0.25f, 0.2f, 0.55f));
             banner.rectTransform.anchorMin = banner.rectTransform.anchorMax = new Vector2(0.5f, 1);
             banner.rectTransform.anchoredPosition = new Vector2(0, -(300 + top));
             banner.gameObject.SetActive(false);
