@@ -118,7 +118,9 @@ namespace SnakeJam
         {
             Palette.Theme(Save.S.theme, out var top, out var bottom, out _);
             cam.backgroundColor = bottom;
-            bg.sprite = GradientSprite(top, bottom);
+            var art = Save.S.theme == 3 ? Resources.Load<Sprite>("Sprites/bg_play") : null;
+            if (art != null) cam.backgroundColor = new Color(0.98f, 0.96f, 0.91f);
+            bg.sprite = art != null ? art : GradientSprite(top, bottom);
             FitBackground();
         }
 
@@ -135,6 +137,8 @@ namespace SnakeJam
         {
             float h = cam.orthographicSize * 2f + 1f;
             float w = h * cam.aspect + 1f;
+            var sz = bg.sprite.bounds.size;
+            if (sz.x > 1f) { float k = Mathf.Max(w / sz.x, h / sz.y); bg.transform.localScale = new Vector3(k, k, 1f); return; }   // picture: cover the screen
             bg.transform.localScale = new Vector3(w / (2f / 64f), h / 1f, 1f);
         }
 
@@ -232,6 +236,14 @@ namespace SnakeJam
             var bgImg = mapRoot.gameObject.AddComponent<Image>();
             bgImg.sprite = GradientSprite(new Color(0.20f, 0.30f, 0.86f), new Color(0.40f, 0.24f, 0.78f));
             bgImg.raycastTarget = true;
+            var mapArt = Resources.Load<Sprite>("Sprites/bg_map");
+            if (mapArt != null)
+            {
+                var ar = UIKit.Anchored(mapRoot, "MapArt", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1080, 1920));
+                var ai = ar.gameObject.AddComponent<Image>(); ai.sprite = mapArt; ai.raycastTarget = false;
+                var fit = ar.gameObject.AddComponent<AspectRatioFitter>(); fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent; fit.aspectRatio = mapArt.rect.width / mapArt.rect.height;
+                ar.anchorMin = Vector2.zero; ar.anchorMax = Vector2.one; ar.offsetMin = ar.offsetMax = Vector2.zero;
+            }
             var rnd = new System.Random(5);
             for (int i = 0; i < 9; i++)
             {
