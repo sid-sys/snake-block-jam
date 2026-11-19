@@ -401,7 +401,7 @@ namespace SnakeJam
             edgeFlash.sprite = EdgeSprite(); edgeFlash.color = new Color(1, 1, 1, 0); edgeFlash.raycastTarget = false;
 
             var hg = UIKit.Icon(hudRoot, "hand", new Vector2(190, 200), new Vector2(0.5f, 0.5f), new Vector2(0.15f, 0.9f), Vector2.zero);
-            hand = hg; hand.sprite = Art.HandYellow; hand.gameObject.SetActive(false);
+            hand = hg; hand.gameObject.SetActive(false);
         }
 
         void StartLevel(int lvl) { StartData(LevelGen.Build(lvl)); }
