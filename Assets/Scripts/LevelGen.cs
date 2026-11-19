@@ -1222,8 +1222,8 @@ namespace SnakeJam
         }
 
         // ---------------------------------------------------------------- test / showcase levels
-        public static readonly string[] SpecialKeys = { "portal", "drill", "frozen", "light", "square", "flower", "road", "pieces", "castle", "elephant", "giant", "long", "all", "spirals", "heart" };
-        public static readonly string[] SpecialTitles = { "Portal test", "Drill test", "Frozen test", "Light test", "Square", "Clover", "Zigzag road", "Road pieces", "Castle", "Elephant", "Giant map", "Long snakes", "All mechanics", "Tap to escape", "Heart road" };
+        public static readonly string[] SpecialKeys = { "portal", "drill", "frozen", "light", "square", "flower", "road", "pieces", "castle", "elephant", "giant", "long", "all", "spirals" };
+        public static readonly string[] SpecialTitles = { "Portal test", "Drill test", "Frozen test", "Light test", "Square", "Clover", "Zigzag road", "Road pieces", "Castle", "Elephant", "Giant map", "Long snakes", "All mechanics", "Tap to escape" };
 
         static SnakeDef S(string coords, int color, bool drill = false)
         {
@@ -1306,21 +1306,6 @@ namespace SnakeJam
                                 d.snakes.Add(sd);
                             }
                         break;
-                    }
-                case "heart":
-                    {
-                        var loop = new List<Vector2Int>();
-                        int[,] pts = { { 11, 3 }, { 9, 3 }, { 9, 5 }, { 7, 5 }, { 7, 7 }, { 5, 7 }, { 5, 11 }, { 7, 11 }, { 7, 13 }, { 10, 13 }, { 10, 11 }, { 12, 11 }, { 12, 13 }, { 15, 13 }, { 15, 11 }, { 17, 11 }, { 17, 7 }, { 15, 7 }, { 15, 5 }, { 13, 5 }, { 13, 3 }, { 11, 3 } };
-                        for (int i = 0; i < pts.GetLength(0); i++) loop.Add(new Vector2Int(pts[i, 0], pts[i, 1]));
-                        d = Generate("Road", 22, 5500 + seed, new GenParams { minLen = 6, maxLen = 14, turn = 0.2f, fill = 0.98f, roadPaths = new List<List<Vector2Int>> { loop } }, 0);
-                        // the road is the picture of the level: put it back even if no snake rides on it
-                        for (int i = 0; i + 1 < loop.Count; i++)
-                        {
-                            var a = loop[i]; var b = loop[i + 1];
-                            var st = new Vector2Int(Math.Sign(b.x - a.x), Math.Sign(b.y - a.y));
-                            for (var c = a; ; c += st) { if (MaskAt(d, c)) d.roads.Add(c); if (c == b) break; }
-                        }
-                        d.title = "Heart road"; break;
                     }
                 case "castle":
                     d = Generate("Castle", 27, 400 + seed, new GenParams { minLen = 10, maxLen = 46, turn = 0.1f, fill = 0.88f }, 0);

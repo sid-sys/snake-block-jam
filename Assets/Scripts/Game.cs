@@ -695,7 +695,7 @@ namespace SnakeJam
         {
             if (screen != Screen.Play || hudRoot == null) return;
             var root = UIKit.Anchored(hudRoot, "HardIntro", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -80), new Vector2(1080, 300));
-            var band = UIKit.Icon(root, "hard_banner", new Vector2(1080, 201), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20));
+            var band = UIKit.Icon(root, "hard_banner", new Vector2(1240, 231), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20));
             band.raycastTarget = false;
             band.gameObject.AddComponent<RectMask2D>();      // the small skulls stay inside the banner
             var hl = UIKit.Label(band.transform, "Hard", 70, Color.white);
@@ -705,10 +705,10 @@ namespace SnakeJam
             for (int i = 0; i < 14; i++)
             {
                 float size = UnityEngine.Random.Range(40f, 70f);
-                var sk = UIKit.Icon(band.transform, "skull_white", new Vector2(size, size), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(UnityEngine.Random.Range(-500f, 500f), -105f));
+                var sk = UIKit.Icon(band.transform, "skull_white", new Vector2(size, size), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(UnityEngine.Random.Range(-500f, 500f), -118f));
                 sk.color = new Color(1, 1, 1, 0.95f);
                 float dur = UnityEngine.Random.Range(1.4f, 2.2f), delay = UnityEngine.Random.Range(0f, 1.0f);
-                sk.rectTransform.DOAnchorPosY(105f, dur).SetDelay(delay).SetEase(Ease.Linear);
+                sk.rectTransform.DOAnchorPosY(118f, dur).SetDelay(delay).SetEase(Ease.Linear);
                 sk.DOFade(0f, dur).SetDelay(delay).SetEase(Ease.InCubic);
             }
             var big = UIKit.Icon(root, "skull_red", new Vector2(230, 230), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 95));
