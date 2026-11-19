@@ -272,7 +272,7 @@ namespace SnakeJam
         }
 
         // shapes drawn from simple pieces (animals, buildings, objects): the board is nearly as wide as it is high
-        public static readonly HashSet<string> PictureShapes = new HashSet<string> { "Hexagon", "Octagon", "Arrow", "T", "Staircase", "Hourglass", "Crown", "Gear", "Fish", "Cat", "Rabbit", "House", "Tree", "Rocket", "Butterfly", "Mushroom" };
+        public static readonly HashSet<string> PictureShapes = new HashSet<string> { "Zigzag", "Lightning", "Snowflake", "Cloverleaf", "Moon", "Star", "Hexagon", "Octagon", "Arrow", "T", "Staircase", "Hourglass", "Crown", "Gear", "Fish", "Cat", "Rabbit", "House", "Tree", "Rocket", "Butterfly", "Mushroom" };
 
         static bool InEll(float dx, float dy, float cx, float cy, float rx, float ry) { float a = (dx - cx) / rx, b = (dy - cy) / ry; return a * a + b * b <= 1f; }
 
@@ -282,6 +282,27 @@ namespace SnakeJam
             float ax = Mathf.Abs(dx), ay = Mathf.Abs(dy);
             switch (shape)
             {
+                case "Zigzag": return (dy >= 0.55f && dy <= 0.95f && ax <= 0.9f) || (dy <= -0.55f && dy >= -0.95f && ax <= 0.9f) || (ay < 0.6f && Mathf.Abs(dx - dy * 1.15f) <= 0.3f);
+                case "Lightning":
+                    return (dy >= 0f && dy <= 0.95f && Mathf.Abs(dx - (0.3f - (0.95f - dy) * 0.55f)) <= 0.32f)
+                        || (dy < 0f && dy >= -0.95f && Mathf.Abs(dx - (-0.3f + (dy + 0.95f) * 0.55f)) <= 0.32f)
+                        || (ay <= 0.14f && ax <= 0.6f);
+                case "Snowflake":
+                    {
+                        float r = Mathf.Sqrt(dx * dx + dy * dy);
+                        if (r > 0.97f) return false;
+                        if (r <= 0.3f) return true;
+                        for (int k = 0; k < 3; k++) { float a = k * Mathf.PI / 3f; if (Mathf.Abs(-dx * Mathf.Sin(a) + dy * Mathf.Cos(a)) <= 0.17f) return true; }
+                        return false;
+                    }
+                case "Pinwheel":
+                    {
+                        float r = Mathf.Sqrt(dx * dx + dy * dy); if (r > 0.97f) return false; if (r < 0.15f) return true;
+                        float t = Mathf.Atan2(dy, dx) / (Mathf.PI / 2f) - r * 0.9f; t -= Mathf.Floor(t);
+                        return t < 0.55f;
+                    }
+                case "Cloverleaf": return InEll(ax, ay, 0.47f, 0.47f, 0.5f, 0.5f) || (ax + ay <= 0.5f);
+                case "Moon": return InEll(dx, dy, 0f, 0f, 0.95f, 0.95f) && !InEll(dx, dy, 0.42f, 0.08f, 0.78f, 0.82f);
                 case "Hexagon": return ax <= 0.95f && ay * 0.866f + ax * 0.5f <= 0.9f;
                 case "Octagon": return ax <= 0.95f && ay <= 0.95f && ax + ay <= 1.35f;
                 case "Arrow": return (ax <= 0.28f && dy >= -0.95f && dy <= 0.25f) || (dy >= 0.1f && dy <= 0.95f && ax <= (0.95f - dy) * 1.0f);
@@ -375,7 +396,33 @@ namespace SnakeJam
                     }
                     mask[x, y] = on;
                 }
+            if (PictureShapes.Contains(shape)) KeepBiggestPiece(mask, w, h);
             return mask;
+        }
+
+        // drops stray cells: only the biggest connected piece of a shape stays
+        static void KeepBiggestPiece(bool[,] m, int w, int h)
+        {
+            var seen = new bool[w, h]; List<Vector2Int> best = null;
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                {
+                    if (!m[x, y] || seen[x, y]) continue;
+                    var comp = new List<Vector2Int>(); var st = new Stack<Vector2Int>(); st.Push(new Vector2Int(x, y)); seen[x, y] = true;
+                    while (st.Count > 0)
+                    {
+                        var c = st.Pop(); comp.Add(c);
+                        foreach (var d in new[] { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down })
+                        {
+                            var n = c + d;
+                            if (n.x >= 0 && n.y >= 0 && n.x < w && n.y < h && m[n.x, n.y] && !seen[n.x, n.y]) { seen[n.x, n.y] = true; st.Push(n); }
+                        }
+                    }
+                    if (best == null || comp.Count > best.Count) best = comp;
+                }
+            if (best == null) return;
+            for (int x = 0; x < w; x++) for (int y = 0; y < h; y++) m[x, y] = false;
+            foreach (var c in best) m[c.x, c.y] = true;
         }
 
         static bool InStar(float x, float y)
@@ -384,7 +431,7 @@ namespace SnakeJam
             for (int i = 0; i < 10; i++)
             {
                 float ang = Mathf.PI / 2f + i * Mathf.PI / 5f;
-                float r = (i % 2 == 0) ? 1.02f : 0.46f;
+                float r = (i % 2 == 0) ? 1.02f : 0.58f;
                 pts[i] = new Vector2(Mathf.Cos(ang) * r, Mathf.Sin(ang) * r);
             }
             bool inside = false;
@@ -1143,17 +1190,17 @@ namespace SnakeJam
             }
             else if (level <= 30)
             {
-                string[] pool = { "Square", "Circle", "Diamond", "Hexagon", "Triangle", "Arrow", "Cross", "Heart", "Octagon", "Flower" };
+                string[] pool = { "Square", "Circle", "Diamond", "Hexagon", "Zigzag", "Triangle", "Arrow", "Cloverleaf", "Cross", "Heart", "Octagon", "Flower" };
                 shape = pool[level % pool.Length]; n = 8 + (level - 10) / 3;
             }
             else if (level <= 70)
             {
-                string[] pool = { "Star", "Circle", "Tree", "Heart", "Rocket", "Ring", "Butterfly", "Flower", "Mushroom", "Elephant", "Crown", "Gear", "Hourglass", "T", "Staircase", "Cross", "Diamond" };
+                string[] pool = { "Star", "Circle", "Tree", "Heart", "Rocket", "Moon", "Ring", "Butterfly", "Snowflake", "Flower", "Mushroom", "Lightning", "Elephant", "Crown", "Gear", "Hourglass", "T", "Staircase", "Cloverleaf", "Cross", "Diamond" };
                 shape = pool[level % pool.Length]; n = 14 + (level - 30) / 5;
             }
             else
             {
-                string[] pool = { "Butterfly", "Star", "Heart", "Rocket", "Gear", "Crown", "Elephant", "Tree", "Mushroom", "Hexagon", "Flower", "Ring" };
+                string[] pool = { "Butterfly", "Snowflake", "Star", "Heart", "Rocket", "Gear", "Moon", "Crown", "Elephant", "Lightning", "Tree", "Mushroom", "Cloverleaf", "Hexagon", "Flower", "Zigzag", "Ring" };
                 shape = pool[level % pool.Length]; n = 20 + Mathf.Min(6, (level - 70) / 10);
             }
             if (breather) { shape = "Square"; n = Mathf.Max(4, n - 3); }
@@ -1170,10 +1217,8 @@ namespace SnakeJam
             bool tutorial = level == 12 || level == 22 || level == 32 || level == 42 || level == 46;
             if (tutorial)
             {
-                // a tiny board that shows only the new mechanic
-                shape = "Square"; n = level == 46 ? 7 : (level == 12 ? 9 : 6); p.require = true;
-                p.minLen = 3; p.maxLen = 4; p.turn = 0.15f; p.fill = 0.8f;
-                p.cap = level == 46 ? 8 : (level == 12 ? 3 : 4);
+                // a normal shaped board that shows the new mechanic once
+                p.require = true;
                 if (level == 12) p.roads = 1;
                 if (level == 22) p.lights = 1;
                 if (level == 32) p.portalPairs = 1;
