@@ -96,7 +96,9 @@ namespace SnakeJam
             ShowSplash();
         }
 
-        void OnDestroy() { Save.Changed -= RefreshHud; }
+        void OnDestroy() { Save.Changed -= RefreshHud; adminSession = false; }
+        void OnApplicationQuit() { adminSession = false; }
+        static bool adminSession;   // admin stays unlocked until the game is closed (or play mode ends)
 
         void Update()
         {
@@ -214,10 +216,11 @@ namespace SnakeJam
             UIKit.FitText(t, 42);
             UIKit.PlainText(t);   // same bold plain text as "Moves: 19" and "Level 25"
             t.rectTransform.offsetMin = new Vector2(size.y * 0.8f, 0);
-            t.rectTransform.offsetMax = new Vector2(withPlus ? -(size.y * 0.95f) : -10, 0);
+            t.rectTransform.offsetMax = new Vector2(-18, 0);
             bucket.Add(t);
+            // the + button sits outside the chip, on its right side, level with it (not above or below)
             if (withPlus)
-                UIKit.Pill(chip.transform, "+", "green", new Vector2(size.y * 0.8f, size.y * 0.66f), new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-12, 0), OpenFreeCoins, null, 40);
+                UIKit.Pill(chip.transform, "+", "green", new Vector2(size.y * 1.0f, size.y * 1.0f), new Vector2(1, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0), OpenFreeCoins, null, 84);
         }
 
         void BuildMap()
@@ -239,9 +242,9 @@ namespace SnakeJam
 
             // top row: avatar | coins | lives | settings, equal gaps of about 74
             UIKit.Icon(mapRoot, "avatar", new Vector2(110, 110), new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -(30 + top)));
-            BuildChip(mapRoot, "icon_coin", new Vector2(213, -(40 + top)), new Vector2(330, 90), true, coinTexts, out mapCoinChip);
+            BuildChip(mapRoot, "icon_coin", new Vector2(158, -(40 + top)), new Vector2(340, 90), true, coinTexts, out mapCoinChip);
 
-            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(618, -(40 + top)), new Vector2(260, 90), UIKit.Chip, "LivesChip");
+            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(660, -(40 + top)), new Vector2(250, 90), UIKit.Chip, "LivesChip");
             UIKit.Skin(lc, "chip", 78, 45);
             UIKit.Icon(lc.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             livesTxt = UIKit.Label(lc.transform, "5", 44, Color.white);
@@ -337,18 +340,18 @@ namespace SnakeJam
             float top = SafeTop(), bottom = SafeBottom();
 
             // top row, four items with equal gaps: coins | moves + level | lives | settings
-            BuildChip(topBar, "icon_coin", new Vector2(30, -(40 + top)), new Vector2(260, 90), true, coinTexts, out hudCoinChip);
+            BuildChip(topBar, "icon_coin", new Vector2(24, -(40 + top)), new Vector2(290, 90), true, coinTexts, out hudCoinChip);
 
-            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(343, -(34 + top)), new Vector2(300, 120), Color.white, "MovesBox");
+            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(425, -(34 + top)), new Vector2(270, 120), Color.white, "MovesBox");
             UIKit.Skin(movesBox, "pill_green", 70, 60);
             movesTxt = UIKit.Label(movesBox.transform, "Moves: 0", 46, Color.white);
             movesTxt.rectTransform.offsetMin = new Vector2(0, 36);
             levelLblTxt = UIKit.Label(movesBox.transform, "Level 1", 26, Color.white);
             levelLblTxt.rectTransform.offsetMin = new Vector2(0, 14);
             levelLblTxt.rectTransform.offsetMax = new Vector2(0, -76);
-            UIKit.PlainText(movesTxt); UIKit.PlainText(levelLblTxt);
+            UIKit.PlainText(movesTxt); UIKit.PlainText(levelLblTxt); UIKit.FitText(movesTxt, 46);
 
-            var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(696, -(40 + top)), new Vector2(190, 90), UIKit.Chip, "LivesChip");
+            var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(715, -(40 + top)), new Vector2(180, 90), UIKit.Chip, "LivesChip");
             UIKit.Skin(hl, "chip", 78, 45);
             UIKit.Icon(hl.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0));
             hudLivesTxt = UIKit.Label(hl.transform, Save.S.lives.ToString(), 46, Color.white);
@@ -805,6 +808,8 @@ namespace SnakeJam
             var doorImg = door.gameObject.AddComponent<Image>(); doorImg.color = new Color(0, 0, 0, 0);
             var doorBtn = door.gameObject.AddComponent<Button>(); doorBtn.transition = Selectable.Transition.None; doorBtn.targetGraphic = doorImg;
             doorBtn.onClick.AddListener(() => { if (++titleTaps >= 7) { titleTaps = 0; OpenAdminPin(); } });
+            if (adminSession)
+                UIKit.Pill(c, "ADMIN LAB", "purple", new Vector2(640, 110), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -1000), () => { settings.Close(); OpenLab(); }, null, 42);
             UIKit.Pill(c, "RESET TUTORIALS", "blue", new Vector2(640, 110), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -870), () =>
             {
                 Save.S.tutorialDone = false; Save.S.zoomTutorialDone = false;
@@ -828,7 +833,7 @@ namespace SnakeJam
                 Refresh();
                 if (typed.Length == 4)
                 {
-                    if (typed == AdminYear) { pin.Close(); if (settings != null) settings.Close(); OpenLab(); }
+                    if (typed == AdminYear) { adminSession = true; pin.Close(); if (settings != null) settings.Close(); OpenLab(); }
                     else { typed = ""; Refresh(); }
                 }
             }
@@ -873,10 +878,15 @@ namespace SnakeJam
             UIKit.Pill(c, "-1", "blue", new Vector2(110, 90), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-250, y0 - 60), () => setJump(-1), null, 36);
             UIKit.Pill(c, "+1", "blue", new Vector2(110, 90), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(250, y0 - 60), () => setJump(1), null, 36);
             UIKit.Pill(c, "+10", "blue", new Vector2(130, 90), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(380, y0 - 60), () => setJump(10), null, 36);
-            UIKit.Pill(c, "PLAY THIS LEVEL", "green", new Vector2(700, 105), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y0 - 170), () =>
+            UIKit.Pill(c, "PLAY THIS LEVEL", "green", new Vector2(450, 105), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-240, y0 - 170), () =>
             {
                 lab.Close(); Save.S.level = jump; Save.Commit(); StartLevel(jump);
-            }, "icon_play", 40);
+            }, "icon_play", 34);
+            UIKit.Pill(c, "NEXT HARD LEVEL", "orange", new Vector2(450, 105), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(240, y0 - 170), () =>
+            {
+                int boss = ((jump + 9) / 10) * 10;   // the next level that ends in 0 (boss level)
+                lab.Close(); Save.S.level = boss; Save.Commit(); StartLevel(boss);
+            }, null, 34);
             float y1 = y0 - 300;
             UIKit.Pill(c, "+9 POWER-UPS", "orange", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-240, y1), () => { Save.S.hints += 9; Save.S.undos += 9; Save.S.vacuums += 9; Save.Commit(); Toast("+9 hint, undo, vacuum"); }, null, 34);
             UIKit.Pill(c, "+9999 COINS", "orange", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(240, y1), () => { Save.S.coins += 9999; Save.Commit(); Toast("+9999 coins"); }, null, 34);
@@ -1074,7 +1084,7 @@ namespace SnakeJam
             }
             var claim = UIKit.Pill(c, can ? (Save.S.giftDay == 2 || Save.S.giftDay == 6 ? "CLAIM" : "CHECK IN") : "COME BACK TOMORROW", can ? "green" : "blue", new Vector2(640, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), () =>
             {
-                if (Save.S.lastGiftDay == Today()) return;
+                if (Save.S.lastGiftDay == Today()) { modal.Close(); return; }   // already claimed: the button just closes the window
                 int day = Save.S.giftDay;
                 switch (day)
                 {

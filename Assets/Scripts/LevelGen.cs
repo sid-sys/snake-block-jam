@@ -533,7 +533,7 @@ namespace SnakeJam
                     // and pick the empty cell farthest from every snake already placed, so no part of the board stays bare.
                     var head = empties[rng.Next(empties.Count)];
                     int bestScore = -1, bestFar = 0;
-                    for (int s = 0; s < 12; s++)
+                    for (int s = 0; s < 24; s++)
                     {
                         var cand = empties[rng.Next(empties.Count)];
                         int far = 99;
@@ -543,10 +543,10 @@ namespace SnakeJam
                                 int dd = Mathf.Max(Mathf.Abs(sc.x - cand.x), Mathf.Abs(sc.y - cand.y));
                                 if (dd < far) far = dd;
                             }
-                        int score = far * 4 + Mathf.Min(Depth(cand), 3);
+                        int score = Mathf.Min(Depth(cand), 14) * 8 + far * 2;   // deepest cells first: the board fills from the middle outwards
                         if (score > bestScore) { bestScore = score; head = cand; bestFar = far; }
                     }
-                    if (bestFar <= 2 || fails > 0 && rng.Next(3) == 0) head = empties[rng.Next(empties.Count)];   // gaps are small now: any free cell will do
+                    if (fails > 2 && rng.Next(3) == 0) head = empties[rng.Next(empties.Count)];   // gaps are small now: any free cell will do
                     var dirs = new List<Vector2Int>(Dirs);
                     for (int i = dirs.Count - 1; i > 0; i--) { int j = rng.Next(i + 1); var t = dirs[i]; dirs[i] = dirs[j]; dirs[j] = t; }
                     bool placed = false;
