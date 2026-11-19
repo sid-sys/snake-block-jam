@@ -37,6 +37,69 @@ namespace SnakeJam
                 return tmpFont;
             }
         }
+        // ---- picture font: every letter and digit is a glossy candy picture (Resources/Fonts/candy_atlas.png + candy_glyphs.json) ----
+        [System.Serializable] class GlyphRow { public string n; public int x, y, w, h, adv, by; }
+        [System.Serializable] class GlyphTable { public GlyphRow[] g; }
+        static TMP_SpriteAsset candySprites;
+        static readonly Dictionary<char, string> candyNames = new Dictionary<char, string>();
+        public const float CandyPointSize = 185f;   // bigger number = smaller letters
+        public static TMP_SpriteAsset CandySprites
+        {
+            get
+            {
+                if (candySprites != null) return candySprites;
+                var tex = Resources.Load<Texture2D>("Fonts/candy_atlas");
+                var json = Resources.Load<TextAsset>("Fonts/candy_glyphs");
+                if (tex == null || json == null) return null;
+                var table = JsonUtility.FromJson<GlyphTable>("{\"g\":" + json.text + "}");
+                var a = ScriptableObject.CreateInstance<TMP_SpriteAsset>();
+                a.name = "Candy Letters";
+                // mark as a current version so Unity does not try to upgrade an old-format asset
+                typeof(TMP_SpriteAsset).GetField("m_Version", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(a, "1.1.0");
+                a.spriteSheet = tex;
+                Shader sh = Shader.Find("TextMeshPro/Sprite");
+                a.material = sh != null ? new Material(sh) : new Material(TMP_Settings.defaultSpriteAsset.material);
+                a.material.mainTexture = tex;
+                a.faceInfo = new UnityEngine.TextCore.FaceInfo { pointSize = CandyPointSize, scale = 1f, ascentLine = CandyPointSize * 0.8f, descentLine = -CandyPointSize * 0.2f, lineHeight = CandyPointSize, baseline = 0f };
+                for (int i = 0; i < table.g.Length; i++)
+                {
+                    var r = table.g[i];
+                    var gl = new TMP_SpriteGlyph
+                    {
+                        index = (uint)i,
+                        metrics = new UnityEngine.TextCore.GlyphMetrics(r.w, r.h, 0f, r.by, r.adv),
+                        glyphRect = new UnityEngine.TextCore.GlyphRect(r.x, tex.height - r.y - r.h, r.w, r.h),
+                        scale = 1f, atlasIndex = 0
+                    };
+                    a.spriteGlyphTable.Add(gl);
+                    var ch = new TMP_SpriteCharacter(0xFFFE, gl) { name = r.n, scale = 1f };
+                    a.spriteCharacterTable.Add(ch);
+                    if (r.n.Length == 1) candyNames[r.n[0]] = r.n;
+                }
+                candyNames['+'] = "plus"; candyNames[':'] = "colon"; candyNames['.'] = "dot"; candyNames['!'] = "excl";
+                candyNames['?'] = "quest"; candyNames['-'] = "minus"; candyNames['%'] = "percent"; candyNames['('] = "lpar"; candyNames[')'] = "rpar"; candyNames[','] = "comma";
+                a.UpdateLookupTables();
+                return candySprites = a;
+            }
+        }
+        class CandyPre : ITextPreprocessor
+        {
+            public string PreprocessText(string text)
+            {
+                if (string.IsNullOrEmpty(text)) return text;
+                var sb = new System.Text.StringBuilder(text.Length * 20);
+                foreach (char c0 in text)
+                {
+                    char c = char.ToUpperInvariant(c0);
+                    string nm;
+                    if (candyNames.TryGetValue(c, out nm)) sb.Append("<sprite name=\"").Append(nm).Append("\" tint=1>");
+                    else sb.Append(c0);
+                }
+                return sb.ToString();
+            }
+        }
+        public static readonly ITextPreprocessor CandyPreprocessor = new CandyPre();
+
         static Material tmpOutline;
         // same font with a dark outline and a drop shadow: the one text style of the whole game
         public static Material TmpOutlineMaterial

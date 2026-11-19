@@ -253,7 +253,7 @@ namespace SnakeJam
             // bottom row: SHOP | PLAY | GIFT (the middle of the screen belongs to the level path)
             nodesRoot = UIKit.Stretch(mapRoot, "Nodes");
             float ny = 90 + bottom;
-            UIKit.Pill(mapRoot, "SHOP", "orange", new Vector2(270, 150), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-370, ny), () => OpenShop(0), "icon_shop", 40);
+            UIKit.Pill(mapRoot, "SHOP", "red", new Vector2(270, 150), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-370, ny), () => OpenShop(0), "icon_shop", 40);
             UIKit.Pill(mapRoot, "PLAY", "green", new Vector2(400, 170), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, ny), OnPlayPressed, null, 80);
             UIKit.Pill(mapRoot, "GIFT", "purple", new Vector2(270, 150), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(370, ny), OpenGift, "icon_gift", 40);
         }
@@ -360,7 +360,7 @@ namespace SnakeJam
             hintB = UIKit.Pill(bottomBar, "2", "blue", new Vector2(240, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-390, by), OnHint, "icon_hint", 52);
             undoB = UIKit.Pill(bottomBar, "2", "green", new Vector2(240, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-130, by), OnUndo, "icon_undo", 52);
             vacB = UIKit.Pill(bottomBar, "1", "purple", new Vector2(240, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(130, by), OnVacuum, "icon_vacuum", 52);
-            UIKit.Pill(bottomBar, "", "orange", new Vector2(240, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(390, by), () => OpenShop(0), "icon_shop", 36);
+            UIKit.Pill(bottomBar, "", "red", new Vector2(240, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(390, by), () => OpenShop(0), "icon_shop", 36);
             string[] names = { "Hint", "Undo", "Vacuum", "Shop" };
             float[] xs = { -390, -130, 130, 390 };
             for (int i = 0; i < 4; i++)

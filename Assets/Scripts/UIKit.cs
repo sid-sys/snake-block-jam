@@ -85,8 +85,16 @@ namespace SnakeJam
             t.fontSize = size; t.color = col; t.alignment = Align(a); t.text = s;
             t.textWrappingMode = TextWrappingModes.NoWrap;
             t.overflowMode = TextOverflowModes.Overflow;
-            t.richText = false;
             t.raycastTarget = false;
+            // picture font: letters and digits are drawn from the candy glyph pictures
+            var sa = Art.CandySprites;
+            if (sa != null)
+            {
+                t.spriteAsset = sa; t.richText = true; t.textPreprocessor = Art.CandyPreprocessor; t.text = s;
+                // the glyph pictures already have their own dark outline: dark text colours become white candy letters
+                if (col.r * 0.3f + col.g * 0.59f + col.b * 0.11f < 0.4f) t.color = Color.white;
+            }
+            else t.richText = false;
             // every light text gets the same candy look as the buttons: dark purple-blue outline + soft drop shadow
             if (shadow) t.fontSharedMaterial = Art.TmpOutlineMaterial;
             return t;
