@@ -38,8 +38,8 @@ namespace SnakeJam
         bool iced;
         Tween drillSpin;
         int[] baseOrder; bool[] over; int headOrderBase;
-        const float BodyW = 0.84f;              // ribbon width in cells (almost the full cell, so full boards look tight)
-        const float HeadW = 0.94f;
+        const float BodyW = 0.7f;               // ribbon width in cells: leaves a clear gap between neighbour snakes
+        const float HeadW = 0.82f;
         const int Sub = 3;                       // pieces per cell
         const float SpriteUnits = 1.1f;          // body sprite is ~1.1 world units
         const int OverBonus = 2000;

@@ -585,10 +585,10 @@ namespace SnakeJam
                         bool ok = false;
                         foreach (var dir in Dirs)
                         {
-                            for (int len = p.maxLen; len >= 2 && !ok; len -= Mathf.Max(1, (p.maxLen - 2) / 3))
+                            for (int len = p.maxLen; len >= p.minLen && !ok; len -= Mathf.Max(1, (p.maxLen - p.minLen) / 3))
                             {
-                                var cells = Walk(cd.c, dir, Mathf.Max(2, len));
-                                if (cells != null && cells.Count >= 2 && TryPlace(cells)) ok = true;
+                                var cells = Walk(cd.c, dir, Mathf.Max(p.minLen, len));
+                                if (cells != null && cells.Count >= p.minLen && TryPlace(cells)) ok = true;
                             }
                             if (ok) break;
                         }
@@ -598,7 +598,7 @@ namespace SnakeJam
                 }
                 // last step: grow snake tails into the free cells that are left, so the board is full like the reference levels.
                 // (only on levels without a snake cap: the first levels keep a few short snakes on purpose)
-                if (p.cap >= 999) Extend();
+                Extend();
             }
 
             // grow the tail of one snake by one cell. Snakes leave in the reverse order they were placed, so snake i
@@ -650,12 +650,13 @@ namespace SnakeJam
 
             void Extend()
             {
-                for (int round = 0; round < 12; round++)
+                for (int round = 0; round < 60; round++)
                 {
                     bool grew = false;
                     for (int i = 0; i < d.snakes.Count; i++)
                     {
                         var cells = d.snakes[i].cells;
+                        if (cells.Count >= p.maxLen + 2) continue;
                         var tail = cells[cells.Count - 1];
                         var order = new List<Vector2Int>(Dirs);
                         for (int a = order.Count - 1; a > 0; a--) { int b = rng.Next(a + 1); var t = order[a]; order[a] = order[b]; order[b] = t; }
@@ -1098,8 +1099,8 @@ namespace SnakeJam
             if (breather) { shape = "Square"; n = Mathf.Max(4, n - 3); }
 
             var p = new GenParams();
-            p.minLen = level <= 10 ? 3 : 2 + Mathf.RoundToInt(dd * 3f);
-            p.maxLen = level <= 3 ? 4 : (level <= 10 ? Mathf.Min(5, 4 + level / 4) : 4 + Mathf.RoundToInt(dd * 6f));
+            p.minLen = level <= 3 ? 4 : (level <= 10 ? 5 : 6 + Mathf.RoundToInt(dd * 3f));
+            p.maxLen = level <= 3 ? 5 : (level <= 10 ? 6 : Mathf.Max(8, n + 1 + Mathf.RoundToInt(dd * 6f)));
             p.turn = level <= 10 ? 0.05f + level * 0.02f : 0.18f + 0.45f * dd;
             p.fill = level <= 10 ? 0.55f + level * 0.03f : 0.9f + 0.08f * dd;
             if (level <= 3) p.cap = 3; else if (level <= 10) p.cap = 4 + level / 3;
