@@ -52,6 +52,7 @@ namespace SnakeJam
             DOTween.Init(true, true, LogBehaviour.ErrorsOnly);
             DOTween.SetTweensCapacity(1500, 200);
             Application.targetFrameRate = 60;
+            Ads.Init();
             Application.runInBackground = true;
             Save.Load();
             Save.TickLives();
@@ -622,7 +623,8 @@ namespace SnakeJam
                 Save.Commit();
                 FlyCoins(win.card.position);
                 win.Close();
-                DOVirtual.DelayedCall(1.0f, () => StartLevel(Save.S.level));   // straight into the next level
+                // straight into the next level (an interstitial ad may come first, but never after a rewarded ad)
+                DOVirtual.DelayedCall(1.0f, () => { if (mult == 1) Ads.MaybeInterstitial(lvl, () => StartLevel(Save.S.level)); else StartLevel(Save.S.level); });
             };
             UIKit.Pill(c, "Claim " + coins, "green", new Vector2(560, 160), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 250), () => { if (!claimed) finish(1); }, null, 70);
             UIKit.Pill(c, "Claim " + coins * 2 + "  AD", "orange", new Vector2(560, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 90), () =>
@@ -906,9 +908,18 @@ namespace SnakeJam
             if (left <= 0) ad.GetComponent<Image>().color = new Color(0.7f, 0.7f, 0.75f, 0.9f);
         }
 
-        // ======================================================= ads (placeholder)
-        // Replace the body of ShowAd with a real rewarded ad SDK call. onReward must run only when the ad was watched.
+        // ======================================================= ads
+        // Rewarded ad (Google AdMob). onReward runs only when the ad was watched. The editor shows a 2 second fake ad instead.
         void ShowAd(Action onReward)
+        {
+#if UNITY_EDITOR
+            ShowFakeAd(onReward);
+#else
+            Ads.ShowRewarded(onReward, () => Toast("No ad ready. Try again soon."));
+#endif
+        }
+
+        void ShowFakeAd(Action onReward)
         {
             var p = UIKit.Popup(cv, "", new Vector2(760, 420), false);
             var t = UIKit.Label(p.content, "Watching ad...", 60, UIKit.Ink, TextAnchor.MiddleCenter, false);
