@@ -177,6 +177,37 @@ namespace SnakeJam
             return b;
         }
 
+        // button that is one finished picture (icon and word are already drawn in it). Height follows the picture shape.
+        public static Button ImageButton(Transform parent, string sprite, float width, Vector2 anchor, Vector2 pivot, Vector2 pos, Action click)
+        {
+            var sp = Art.Get(sprite);
+            float h = sp != null ? width * sp.rect.height / sp.rect.width : width * 0.3f;
+            var rt = Anchored(parent, "Btn_" + sprite, anchor, pivot, pos, new Vector2(width, h));
+            var im = rt.gameObject.AddComponent<Image>();
+            im.sprite = sp; im.preserveAspect = true;
+            var b = rt.gameObject.AddComponent<Button>();
+            b.transition = Selectable.Transition.None;
+            b.targetGraphic = im;
+            b.onClick.AddListener(() =>
+            {
+                if (!SilentClicks) Sfx.Play("ui_click");
+                rt.DOKill(true);
+                rt.DOPunchScale(new Vector3(-0.07f, -0.07f, 0f), 0.18f, 1, 0f);
+                click?.Invoke();
+            });
+            return b;
+        }
+
+        // small dark number badge on the top right corner of a button (the count of a power-up, or its unlock level)
+        public static TMP_Text Badge(RectTransform button, string text)
+        {
+            var chip = Panel(button, new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-16, -2), new Vector2(120, 62), Chip, "Badge");
+            Skin(chip, "chip", 78, 31);
+            var t = Label(chip.transform, text, 38, Color.white);
+            FitText(t, 38);
+            return t;
+        }
+
         // text shrinks by itself when it is too long for its box (never grows past maxSize)
         public static void FitText(TMP_Text t, float maxSize)
         {
