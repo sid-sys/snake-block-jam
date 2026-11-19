@@ -271,6 +271,57 @@ namespace SnakeJam
             return m;
         }
 
+        // shapes drawn from simple pieces (animals, buildings, objects): the board is nearly as wide as it is high
+        public static readonly HashSet<string> PictureShapes = new HashSet<string> { "Hexagon", "Octagon", "Arrow", "T", "Staircase", "Hourglass", "Crown", "Gear", "Fish", "Cat", "Rabbit", "House", "Tree", "Rocket", "Butterfly", "Mushroom" };
+
+        static bool InEll(float dx, float dy, float cx, float cy, float rx, float ry) { float a = (dx - cx) / rx, b = (dy - cy) / ry; return a * a + b * b <= 1f; }
+
+        // dx, dy run from -1 to 1 (dy up)
+        static bool PictureCell(string shape, float dx, float dy)
+        {
+            float ax = Mathf.Abs(dx), ay = Mathf.Abs(dy);
+            switch (shape)
+            {
+                case "Hexagon": return ax <= 0.95f && ay * 0.866f + ax * 0.5f <= 0.9f;
+                case "Octagon": return ax <= 0.95f && ay <= 0.95f && ax + ay <= 1.35f;
+                case "Arrow": return (ax <= 0.28f && dy >= -0.95f && dy <= 0.25f) || (dy >= 0.1f && dy <= 0.95f && ax <= (0.95f - dy) * 1.0f);
+                case "T": return (dy >= 0.4f && ax <= 0.95f && dy <= 0.95f) || (ax <= 0.3f && dy >= -0.95f && dy <= 0.95f);
+                case "Staircase": { int col = Mathf.Clamp(Mathf.FloorToInt((dx + 1f) * 2f), 0, 3); return dy + 1f <= 0.5f * (col + 1) + 0.001f; }
+                case "Hourglass": return ay <= 0.95f && ax <= 0.2f + 0.78f * ay;
+                case "Crown":
+                    if (dy <= -0.3f) return dy >= -0.9f && ax <= 0.95f;
+                    if (dy > 0.92f) return false;
+                    return Mathf.Abs(dx + 0.65f) <= (0.92f - dy) * 0.32f + 0.02f || ax <= (0.92f - dy) * 0.32f + 0.02f || Mathf.Abs(dx - 0.65f) <= (0.92f - dy) * 0.32f + 0.02f;
+                case "Gear":
+                    {
+                        float r = Mathf.Sqrt(dx * dx + dy * dy), ang = Mathf.Atan2(dy, dx);
+                        if (r < 0.22f) return false;
+                        return r <= 0.72f || (r <= 0.98f && Mathf.Cos(8f * ang) > 0f);
+                    }
+                case "Fish": return InEll(dx, dy, -0.2f, 0f, 0.72f, 0.55f) || (dx >= 0.4f && dx <= 1f && ay <= (dx - 0.3f) * 0.95f);
+                case "Cat":
+                    return InEll(dx, dy, 0f, -0.15f, 0.82f, 0.7f)
+                        || (dy >= 0.35f && dy <= 0.98f && (Mathf.Abs(dx + 0.52f) <= (0.98f - dy) * 0.6f || Mathf.Abs(dx - 0.52f) <= (0.98f - dy) * 0.6f));
+                case "Rabbit":
+                    return InEll(dx, dy, 0f, -0.4f, 0.62f, 0.52f) || InEll(dx, dy, 0f, -0.85f, 0.8f, 0.2f)
+                        || InEll(Mathf.Abs(dx), dy, 0.3f, 0.45f, 0.17f, 0.52f);
+                case "House":
+                    return (ax <= 0.75f && dy >= -0.92f && dy <= 0.1f) || (dy > 0.1f && dy <= 0.95f && ax <= (0.95f - dy) * 1.12f)
+                        || (dx >= 0.35f && dx <= 0.58f && dy > 0.2f && dy <= 0.85f);
+                case "Tree":
+                    return InEll(dx, dy, 0f, 0.35f, 0.8f, 0.62f) || InEll(Mathf.Abs(dx), dy, 0.5f, 0f, 0.46f, 0.36f) || (ax <= 0.17f && dy >= -0.95f && dy <= -0.1f);
+                case "Rocket":
+                    return InEll(dx, dy, 0f, 0.12f, 0.42f, 0.85f)
+                        || (dy >= -0.85f && dy <= -0.25f && ax <= 0.8f - (dy + 0.85f) * 0.7f && ax >= 0.2f)
+                        || (ax <= 0.2f && dy >= -0.98f && dy <= -0.6f);
+                case "Butterfly":
+                    return InEll(Mathf.Abs(dx), dy, 0.5f, 0.38f, 0.46f, 0.56f) || InEll(Mathf.Abs(dx), dy, 0.4f, -0.45f, 0.36f, 0.42f) || (ax <= 0.09f && ay <= 0.85f);
+                case "Mushroom":
+                    return (dy >= -0.1f && InEll(dx, dy, 0f, -0.1f, 0.97f, 0.85f)) || (ax <= 0.3f && dy >= -0.95f && dy < -0.05f);
+            }
+            return true;
+        }
+
         static bool[,] MakeMask(string shape, int n, out int w, out int h)
         {
             if (shape == "ElephantBig") return ElephantMask(out w, out h);
@@ -289,7 +340,8 @@ namespace SnakeJam
             w = n; h = n;
             // phone screens are tall: normal level shapes are drawn 3:4 portrait so the board fills the screen (about the same cell count)
             // (width : height about 0.55, the shape of the free screen area, with about the same number of cells)
-            if (shape != "Road" && shape != "Flower") { w = Mathf.Max(4, Mathf.RoundToInt(n * 0.72f)); h = Mathf.Max(7, Mathf.RoundToInt(n * 1.45f)); }
+            if (PictureShapes.Contains(shape)) { w = Mathf.Max(7, Mathf.RoundToInt(n * 0.95f)); h = Mathf.Max(8, Mathf.RoundToInt(n * 1.2f)); }
+            else if (shape != "Road" && shape != "Flower") { w = Mathf.Max(4, Mathf.RoundToInt(n * 0.72f)); h = Mathf.Max(7, Mathf.RoundToInt(n * 1.45f)); }
             if (shape == "Road") { w = n; h = n - 4; }
             var mask = new bool[w, h];
             float cx = (w - 1) / 2f, cy = (h - 1) / 2f;
@@ -319,7 +371,7 @@ namespace SnakeJam
                                 on = r <= 0.62f + 0.36f * Mathf.Abs(Mathf.Cos(4f * ang)) && r <= 1f;
                                 break;
                             }
-                        default: on = true; break;
+                        default: on = PictureShapes.Contains(shape) ? PictureCell(shape, dx, dy) : true; break;
                     }
                     mask[x, y] = on;
                 }
@@ -1091,18 +1143,18 @@ namespace SnakeJam
             }
             else if (level <= 30)
             {
-                string[] pool = { "Square", "Circle", "Diamond", "Triangle", "Cross", "Heart", "Flower" };
-                shape = pool[rng.Next(pool.Length)]; n = 8 + (level - 10) / 3;
+                string[] pool = { "Square", "Fish", "Circle", "House", "Diamond", "Hexagon", "Triangle", "Arrow", "Cross", "Heart", "Octagon", "Flower" };
+                shape = pool[level % pool.Length]; n = 8 + (level - 10) / 3;
             }
             else if (level <= 70)
             {
-                string[] pool = { "Circle", "Star", "Heart", "Ring", "Flower", "Elephant", "Cross", "Diamond" };
-                shape = pool[rng.Next(pool.Length)]; n = 14 + (level - 30) / 5;
+                string[] pool = { "Cat", "Star", "Rabbit", "Circle", "Tree", "Heart", "Rocket", "Ring", "Butterfly", "Flower", "Mushroom", "Elephant", "Crown", "Gear", "Hourglass", "T", "Staircase", "Cross", "Diamond", "Fish", "House" };
+                shape = pool[level % pool.Length]; n = 14 + (level - 30) / 5;
             }
             else
             {
-                string[] pool = { "Star", "Heart", "Circle", "Ring", "Elephant", "Cross", "Elephant" };
-                shape = pool[rng.Next(pool.Length)]; n = 20 + Mathf.Min(6, (level - 70) / 10);
+                string[] pool = { "Butterfly", "Star", "Cat", "Heart", "Rocket", "Gear", "Rabbit", "Crown", "Elephant", "Tree", "Mushroom", "Fish", "House", "Hexagon", "Flower", "Ring" };
+                shape = pool[level % pool.Length]; n = 20 + Mathf.Min(6, (level - 70) / 10);
             }
             if (breather) { shape = "Square"; n = Mathf.Max(4, n - 3); }
 

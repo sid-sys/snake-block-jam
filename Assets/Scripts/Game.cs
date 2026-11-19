@@ -351,8 +351,8 @@ namespace SnakeJam
             levelLblTxt.rectTransform.offsetMin = new Vector2(0, 14);
             levelLblTxt.rectTransform.offsetMax = new Vector2(0, -76);
             UIKit.PlainText(movesTxt); UIKit.PlainText(levelLblTxt); UIKit.FitText(movesTxt, 46);
-            movesSkull = UIKit.Icon(movesBox.transform, "icon_gear", new Vector2(76, 76), new Vector2(0, 1), new Vector2(0.5f, 0.5f), new Vector2(14, -6));
-            movesSkull.sprite = Art.Skull; movesSkull.gameObject.SetActive(false);
+            movesSkull = UIKit.Icon(movesBox.transform, "icon_gear", new Vector2(66, 66), new Vector2(0, 1), new Vector2(0.5f, 0.5f), new Vector2(-8, 14));
+            movesSkull.sprite = Resources.Load<Sprite>("Sprites/skull_white"); movesSkull.gameObject.SetActive(false);
             // tutorial text card (under the top bar)
             tutCard = UIKit.Panel(hudRoot, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -(185 + top)), new Vector2(900, 150), new Color(0.12f, 0.1f, 0.4f, 1f), "TutCard");
             tutTxt = UIKit.Label(tutCard.transform, "", 34, Color.white);
@@ -695,29 +695,23 @@ namespace SnakeJam
         {
             if (screen != Screen.Play || hudRoot == null) return;
             var root = UIKit.Anchored(hudRoot, "HardIntro", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -80), new Vector2(1080, 300));
-            var band = UIKit.Anchored(root, "Band", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1080, 230));
-            var bg = band.gameObject.AddComponent<Image>(); bg.color = new Color(0.82f, 0.06f, 0.1f, 0.96f); bg.raycastTarget = false;
+            var band = UIKit.Icon(root, "hard_banner", new Vector2(1080, 201), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20));
+            band.raycastTarget = false;
             band.gameObject.AddComponent<RectMask2D>();      // the small skulls stay inside the banner
-            for (int s = 0; s < 2; s++)
-            {
-                var st = UIKit.Anchored(band, "Stripe", new Vector2(0.5f, s == 0 ? 1f : 0f), new Vector2(0.5f, s == 0 ? 1f : 0f), Vector2.zero, new Vector2(1080, 30));
-                var si = st.gameObject.AddComponent<Image>(); si.sprite = Art.Stripes; si.type = Image.Type.Tiled; si.raycastTarget = false;
-            }
-            var hl = UIKit.Label(band, "Hard", 70, Color.white);
+            var hl = UIKit.Label(band.transform, "Hard", 70, Color.white);
             hl.rectTransform.anchorMin = hl.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            hl.rectTransform.anchoredPosition = new Vector2(0, -75);
+            hl.rectTransform.anchoredPosition = new Vector2(0, -30);
             // small white skulls float up slowly from the bottom of the banner and fade away before the top
             for (int i = 0; i < 14; i++)
             {
-                float size = UnityEngine.Random.Range(34f, 62f);
-                var sk = UIKit.Icon(band, "icon_gear", new Vector2(size, size), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(UnityEngine.Random.Range(-500f, 500f), -125f));
-                sk.sprite = Art.Skull; sk.color = new Color(1, 1, 1, 0.9f);
+                float size = UnityEngine.Random.Range(40f, 70f);
+                var sk = UIKit.Icon(band.transform, "skull_white", new Vector2(size, size), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(UnityEngine.Random.Range(-500f, 500f), -105f));
+                sk.color = new Color(1, 1, 1, 0.95f);
                 float dur = UnityEngine.Random.Range(1.4f, 2.2f), delay = UnityEngine.Random.Range(0f, 1.0f);
-                sk.rectTransform.DOAnchorPosY(125f, dur).SetDelay(delay).SetEase(Ease.Linear);
+                sk.rectTransform.DOAnchorPosY(105f, dur).SetDelay(delay).SetEase(Ease.Linear);
                 sk.DOFade(0f, dur).SetDelay(delay).SetEase(Ease.InCubic);
             }
-            var big = UIKit.Icon(root, "icon_gear", new Vector2(220, 220), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 80));
-            big.sprite = Art.SkullBig;
+            var big = UIKit.Icon(root, "skull_red", new Vector2(230, 230), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 95));
             root.localScale = new Vector3(1f, 0f, 1f);
             big.transform.localScale = Vector3.zero;
             var seq = DOTween.Sequence();
