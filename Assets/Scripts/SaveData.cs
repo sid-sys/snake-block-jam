@@ -8,11 +8,14 @@ namespace SnakeJam
     public class SaveState
     {
         public int level = 1;
-        public int coins = 100;
-        public int gems = 0;
-        public int hints = 2;
-        public int undos = 2;
-        public int vacuums = 1;
+        public int coins = 200;
+        public int hints = 1;      // Hint unlocks at level 6
+        public int undos = 2;      // Undo unlocks at level 3
+        public int vacuums = 1;    // Vacuum unlocks at level 10
+        // rewarded ad limits (reset every day)
+        public int adDay = -1;
+        public int adLives, adCoins, adPower;
+        public long adCoinsLastUnix = 0;
         public int skin = 1;     // default look: Neon snakes on the Night board
         public int theme = 3;
         public List<int> ownedSkins = new List<int> { 1 };
@@ -55,8 +58,19 @@ namespace SnakeJam
         }
 
         public const int MaxLives = 5;
-        public const int LifeSeconds = 900;
-        static long Now() => System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        public const int LifeSeconds = 1500;   // 1 life every 25 minutes
+        public static long Now() => System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        public static int Today() => (int)(System.DateTime.UtcNow - new System.DateTime(2024, 1, 1)).TotalDays;
+
+        // daily ad limits
+        public const int AdLivesPerDay = 3, AdCoinsPerDay = 3, AdPowerPerDay = 2, AdCoinsCooldown = 900, AdCoinsAmount = 150;
+        public const int UndoUnlock = 3, HintUnlock = 6, VacuumUnlock = 10;
+        public static void CheckAdDay()
+        {
+            if (S.adDay == Today()) return;
+            S.adDay = Today(); S.adLives = 0; S.adCoins = 0; S.adPower = 0; S.adCoinsLastUnix = 0;
+        }
+        public static int CoinAdWait() { CheckAdDay(); return (int)Mathf.Max(0, S.adCoinsLastUnix + AdCoinsCooldown - Now()); }
 
         // give back lives that regenerated while away
         public static void TickLives()
@@ -97,7 +111,7 @@ namespace SnakeJam
     public static class Palette
     {
         public static readonly string[] SkinNames = { "Candy", "Neon", "Sunset", "Ocean", "Jungle", "Red & White", "Rainbow", "Black & White", "Zebra" };
-        public static readonly int[] SkinGemPrice = { 20, 0, 30, 40, 60, 50, 80, 50, 80 };
+        public static readonly int[] SkinCoinPrice = { 600, 0, 800, 1000, 1400, 1200, 1800, 1200, 1800 };
         // 0 = one colour per snake, 1 = rainbow along the body (violet head to red tail), 2 = black / white zebra stripes
         public static int SkinKind(int i) => i == 6 ? 1 : (i == 8 ? 2 : 0);
 
@@ -128,7 +142,7 @@ namespace SnakeJam
         public static readonly Color DotLight = new Color(0.45f, 0.55f, 0.7f, 0.55f);
 
         public static readonly string[] ThemeNames = { "Sky", "Mint", "Candy Land", "Night", "Paper" };
-        public static readonly int[] ThemeCoinPrice = { 600, 400, 800, 0, 500 };
+        public static readonly int[] ThemeCoinPrice = { 1500, 1200, 2400, 0, 1800 };
         // top, bottom background colours
         public static void Theme(int i, out Color top, out Color bottom, out Color tile)
         {

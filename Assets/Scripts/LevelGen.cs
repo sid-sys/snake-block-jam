@@ -354,6 +354,7 @@ namespace SnakeJam
             public float turn = 0.3f, fill = 0.85f;
             public List<List<Vector2Int>> roadPaths;
             public int roads;
+            public bool require;             // retry until every mechanic asked for is really on the board
             public int lights;
             public string[] pieceKeys;       // forced piece list, "name:rotation"
             public string letters;           // fixed letter roads laid out in a grid
@@ -796,7 +797,8 @@ namespace SnakeJam
                     }
                 return;
             }
-            if (d.w < 9 || d.h < 9) return;
+            if (!p.require && (d.w < 9 || d.h < 9)) return;      // small tutorial boards may carry one small road piece
+            if (d.w < 5 || d.h < 7) return;
             for (int k = 0; k < p.roads; k++)
                 for (int tries = 0; tries < 80; tries++)
                     if (PlacePiece(d, Pieces[rng.Next(Pieces.Length)], rng.Next(4), new Vector2Int(rng.Next(0, d.w - 2), rng.Next(0, d.h - 2)), true)) break;
@@ -912,6 +914,15 @@ namespace SnakeJam
                     }
                 }
                 for (int i = 0; i < d.snakes.Count; i++) d.snakes[i].colorIdx = Pick(i, seed);
+                if (p.require)
+                {
+                    // tutorial and boss levels must really show the mechanics they promise
+                    if (p.roads > 0 && d.roads.Count == 0) continue;
+                    if (p.lights > 0 && d.lights.Count == 0) continue;
+                    if (p.portalPairs > 0 && d.portals.Count == 0) continue;
+                    if (p.drills > 0 && d.rocks.Count == 0) continue;
+                    if (p.frozen > 0 && !d.HasFrozen) continue;
+                }
                 if (IsSolvable(d)) return d;
             }
             // fall back to the simplest board so the game never gets stuck
@@ -962,10 +973,26 @@ namespace SnakeJam
             bool boss = level % 10 == 0 && level >= 10;
             if (boss)
             {
-                string[] keys = { "square", "flower", "road", "castle", "elephant", "giant" };
-                var sp = BuildSpecial(keys[(level / 10 - 1) % 6], level);
+                LevelData sp;
+                if (level <= 50)
+                {
+                    // boss 1 mega grid, 2 roads, 3 roads + lights, 4 portals + lights + roads, 5 everything
+                    int k = level / 10;
+                    var bp = new GenParams { minLen = 3, maxLen = 8, turn = 0.4f, fill = 0.93f, require = true };
+                    string bshape = "Square"; int bn = 10 + k;
+                    if (k >= 2) { bp.roads = k >= 4 ? 3 : 2; }
+                    if (k >= 3) bp.lights = k >= 5 ? 3 : 2;
+                    if (k >= 4) bp.portalPairs = k >= 5 ? 2 : 1;
+                    if (k >= 5) { bp.drills = 2; bp.frozen = 2; bshape = "Diamond"; bn = 15; }
+                    sp = Generate(bshape, bn, level * 104729 + 7, bp, level);
+                }
+                else
+                {
+                    string[] keys = { "square", "flower", "road", "castle", "elephant", "giant" };
+                    sp = BuildSpecial(keys[(level / 10 - 1) % 6], level);
+                }
                 sp.level = level; sp.hard = true;
-                SetMoves(sp, true, false);
+                SetMargin(sp, MarginFor(level));
                 sp.title = "";
                 return sp;
             }
@@ -1004,18 +1031,61 @@ namespace SnakeJam
             p.turn = level <= 10 ? 0.05f + level * 0.02f : 0.18f + 0.45f * dd;
             p.fill = level <= 10 ? 0.45f + level * 0.02f : 0.78f + 0.17f * dd;
             if (level <= 3) p.cap = 3; else if (level <= 10) p.cap = 4 + level / 3;
-            if (!breather)
+            // mechanic roadmap: one new mechanic per chapter, always on level X2 (roads 12, lights 22, portals 32, drills 42, frozen 46)
+            int pos = level % 10;
+            bool On(int intro) => level == intro || (level > intro && pos != 1 && pos != 9 && (level * 7 + intro) % 3 != 0);
+            bool tutorial = level == 12 || level == 22 || level == 32 || level == 42 || level == 46;
+            if (tutorial)
             {
-                if (level >= 24 && level % 5 == 4) p.lights = Mathf.Min(3, 1 + (level - 24) / 40);
-                if (level >= 14 && level % 4 == 2) p.roads = Mathf.Min(3, 1 + (level - 14) / 40);
+                // a tiny board that shows only the new mechanic
+                shape = "Square"; n = level == 46 ? 7 : (level == 12 ? 9 : 6); p.require = true;
+                p.minLen = 3; p.maxLen = 4; p.turn = 0.15f; p.fill = 0.8f;
+                p.cap = level == 46 ? 8 : (level == 12 ? 3 : 4);
+                if (level == 12) p.roads = 1;
+                if (level == 22) p.lights = 1;
+                if (level == 32) p.portalPairs = 1;
+                if (level == 42) p.drills = 1;
+                if (level == 46) p.frozen = 1;
+            }
+            else
+            {
                 // bridges are switched off for now (a road with underpass art will replace them)
-                if (level >= 26 && level % 4 == 2) p.portalPairs = 1 + (level >= 60 ? 1 : 0);
-                if (level >= 41 && level % 5 == 1) p.drills = 1 + (level - 41) / 40;
-                if (level >= 56 && level % 3 == 1) p.frozen = Mathf.Min(1 + (level - 56) / 25, 4);
+                if (On(12)) p.roads = Mathf.Min(3, 1 + (level - 12) / 40);
+                if (On(22)) p.lights = Mathf.Min(3, 1 + (level - 22) / 40);
+                if (On(32)) p.portalPairs = 1 + (level >= 60 ? 1 : 0);
+                if (On(42)) p.drills = 1 + (level - 42) / 40;
+                if (On(46)) p.frozen = Mathf.Min(1 + (level - 46) / 25, 4);
             }
             var data = Generate(shape, n, level * 7919 + 13, p, level);
-            SetMoves(data, false, level <= 10);
+            SetMargin(data, MarginFor(level));
             return data;
+        }
+
+        // The 10 level sawtooth: extra moves = allowed moves - minimum moves.
+        // X1 cool down +4, X2 tutorial +4, X3-X4 +3, X5 spike +1, X6 +3, X7 +2, X8 pre-boss test +1, X9 confidence +3, X0 boss 0 to +1.
+        public static int MarginFor(int level)
+        {
+            int pos = level % 10;
+            int m;
+            switch (pos)
+            {
+                case 1: case 2: m = 4; break;
+                case 3: case 4: m = 3; break;
+                case 5: m = 1; break;
+                case 6: m = 3; break;
+                case 7: m = 2; break;
+                case 8: m = 1; break;
+                case 9: m = 3; break;
+                default: m = level <= 20 ? 1 : 0; break;
+            }
+            if (level <= 9) m = Mathf.Max(m, level <= 3 ? 5 : 3);     // the very first levels stay friendly
+            return m;
+        }
+
+        static void SetMargin(LevelData d, int margin)
+        {
+            d.minMoves = d.snakes.Count;      // one tap per snake when played perfectly
+            d.moves = d.minMoves + margin + d.lights.Count * 2;
         }
 
         // ---------------------------------------------------------------- test / showcase levels

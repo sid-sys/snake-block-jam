@@ -27,7 +27,6 @@ namespace SnakeJam
 
         // shared chips
         readonly List<TMP_Text> coinTexts = new List<TMP_Text>();
-        readonly List<TMP_Text> gemTexts = new List<TMP_Text>();
         RectTransform hudCoinChip, mapCoinChip;
         TMP_Text hudLivesTxt, livesTxt, timerTxt, movesTxt, levelLblTxt, banner, loadingTxt;
         Image movesBox, loadFill, hand, edgeFlash;
@@ -43,6 +42,7 @@ namespace SnakeJam
         bool previewShop, previewFromMap; int origTheme, origSkin;
         float rowStep = 178f, rowH = 160f;
         int shopTab;
+        bool adMovesUsed;       // the free "+5 moves" ad was already used in this level attempt
         float tickT;
 
         // ======================================================= setup
@@ -214,7 +214,7 @@ namespace SnakeJam
             t.rectTransform.offsetMax = new Vector2(withPlus ? -(size.y * 0.95f) : -10, 0);
             bucket.Add(t);
             if (withPlus)
-                UIKit.Pill(chip.transform, "+", "green", new Vector2(size.y * 0.8f, size.y * 0.66f), new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-12, 0), () => OpenShop(0), null, 40);
+                UIKit.Pill(chip.transform, "+", "green", new Vector2(size.y * 0.8f, size.y * 0.66f), new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-12, 0), OpenFreeCoins, null, 40);
         }
 
         void BuildMap()
@@ -234,17 +234,16 @@ namespace SnakeJam
             }
             float top = SafeTop(), bottom = SafeBottom();
 
-            // top row: money and lives only, five items with equal gaps (28 | 110 | 270 | 190 | 220 | 100 | 30, gaps of 33)
+            // top row: avatar | coins | lives | settings, equal gaps of about 74
             UIKit.Icon(mapRoot, "avatar", new Vector2(110, 110), new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -(30 + top)));
-            BuildChip(mapRoot, "icon_coin", new Vector2(171, -(40 + top)), new Vector2(270, 90), true, coinTexts, out mapCoinChip);
-            BuildChip(mapRoot, "icon_gem", new Vector2(474, -(40 + top)), new Vector2(190, 90), false, gemTexts, out _);
+            BuildChip(mapRoot, "icon_coin", new Vector2(213, -(40 + top)), new Vector2(330, 90), true, coinTexts, out mapCoinChip);
 
-            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(697, -(40 + top)), new Vector2(220, 90), UIKit.Chip, "LivesChip");
+            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(618, -(40 + top)), new Vector2(260, 90), UIKit.Chip, "LivesChip");
             UIKit.Icon(lc.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             livesTxt = UIKit.Label(lc.transform, "5", 44, Color.white);
             livesTxt.rectTransform.offsetMin = new Vector2(70, 0); livesTxt.rectTransform.offsetMax = new Vector2(-90, 0);
             timerTxt = UIKit.Label(lc.transform, "", 28, Color.white);
-            timerTxt.rectTransform.offsetMin = new Vector2(100, 0); timerTxt.rectTransform.offsetMax = new Vector2(0, 0);
+            timerTxt.rectTransform.offsetMin = new Vector2(120, 0); timerTxt.rectTransform.offsetMax = new Vector2(0, 0);
             timerTxt.alignment = TextAlignmentOptions.Center;
 
             UIKit.Pill(mapRoot, "", "blue", new Vector2(100, 90), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -(40 + top)), OpenSettings, "icon_gear", 30);
@@ -394,6 +393,7 @@ namespace SnakeJam
         {
             if (data.level > 0 && Save.S.lives <= 0) { ShowNoLives(); return; }
             screen = Screen.Play;
+            adMovesUsed = false;
             splashRoot.gameObject.SetActive(false);
             mapRoot.gameObject.SetActive(false);
             hudRoot.gameObject.SetActive(true);
@@ -423,15 +423,18 @@ namespace SnakeJam
             DOVirtual.DelayedCall(1.7f, () => CheckIntros(data));
         }
 
+        // power-ups unlock one by one (Undo level 3, Hint level 6, Vacuum level 10); test levels have everything
+        bool PowerOpen(int unlockLevel) => board == null || board.data == null || board.data.level == 0 || board.data.level >= unlockLevel;
+        string PowerLabel(int unlockLevel, int count) => !PowerOpen(unlockLevel) ? "Lv " + unlockLevel : (count > 0 ? count.ToString() : "+");
+
         void RefreshHud()
         {
             if (Save.S == null || movesTxt == null) return;
             string c = Save.S.coins.ToString("N0");
             foreach (var t in coinTexts) if (t != null) t.text = c;
-            foreach (var t in gemTexts) if (t != null) t.text = Save.S.gems.ToString();
-            UIKit.SetPillLabel(hintB, Save.S.hints > 0 ? Save.S.hints.ToString() : "+");
-            UIKit.SetPillLabel(undoB, Save.S.undos > 0 ? Save.S.undos.ToString() : "+");
-            UIKit.SetPillLabel(vacB, Save.S.vacuums > 0 ? Save.S.vacuums.ToString() : "+");
+            UIKit.SetPillLabel(hintB, PowerLabel(Save.HintUnlock, Save.S.hints));
+            UIKit.SetPillLabel(undoB, PowerLabel(Save.UndoUnlock, Save.S.undos));
+            UIKit.SetPillLabel(vacB, PowerLabel(Save.VacuumUnlock, Save.S.vacuums));
             RefreshLives();
             if (board != null && board.data != null)
             {
@@ -539,8 +542,12 @@ namespace SnakeJam
             if (board.data.level == 0) { ShowTestComplete(); return; }
             int lvl = board.data.level;
             bool hard = board.data.hard;
-            int coins = 25 + (hard ? 25 : 0) + Mathf.Min(25, lvl / 5);
-            int gems = lvl % 10 == 0 ? 10 : (lvl % 5 == 0 ? 5 : 0);
+            // normal win: 50 coins + 10 per unused move (at most +30). Boss win (every 10th level): 250 coins + one random power-up.
+            bool boss = lvl % 10 == 0;
+            int unused = Save.S.adminUnlimited ? 0 : Mathf.Max(0, board.movesLeft);
+            int coins = boss ? 250 : 50 + Mathf.Min(30, unused * 10);
+            int prize = boss ? UnityEngine.Random.Range(0, 3) : -1;           // 0 hint, 1 undo, 2 vacuum
+            string[] prizeIcon = { "icon_hint", "icon_undo", "icon_vacuum" }, prizeName = { "Hint", "Undo", "Vacuum" };
 
             win = UIKit.Popup(cv, "", new Vector2(1000, 1500), false, 0.85f, true);
             Sfx.Play("complete");
@@ -559,14 +566,14 @@ namespace SnakeJam
             pile.transform.localScale = Vector3.zero; pile.transform.DOScale(1f, 0.5f).SetEase(Ease.OutBack).SetDelay(0.2f);
             var amt = UIKit.Label(c, "0", 110, Color.white);
             amt.rectTransform.anchorMin = amt.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            amt.rectTransform.anchoredPosition = new Vector2(0, -190);
+            amt.rectTransform.anchoredPosition = new Vector2(0, prize >= 0 ? -170 : -190);
             DOVirtual.Float(0, coins, 0.7f, v => amt.text = Mathf.RoundToInt(v).ToString()).SetDelay(0.5f);
-            if (gems > 0)
+            if (prize >= 0)
             {
-                var gl = UIKit.Label(c, "+" + gems, 84, new Color(0.55f, 0.97f, 1f));
+                var gl = UIKit.Label(c, "+1 " + prizeName[prize], 56, new Color(1f, 0.95f, 0.6f));
                 gl.rectTransform.anchorMin = gl.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-                gl.rectTransform.anchoredPosition = new Vector2(60, -285);
-                var gi = UIKit.Icon(c, "icon_gem", new Vector2(110, 110), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-70, -285));
+                gl.rectTransform.anchoredPosition = new Vector2(60, -272);
+                var gi = UIKit.Icon(c, prizeIcon[prize], new Vector2(90, 90), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-130, -272));
                 gi.transform.localScale = Vector3.zero; gi.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack).SetDelay(0.9f);
             }
 
@@ -575,14 +582,15 @@ namespace SnakeJam
             {
                 claimed = true;
                 Save.S.level = Mathf.Max(Save.S.level, lvl + 1);
-                Save.S.coins += coins * mult; Save.S.gems += gems;
+                Save.S.coins += coins * mult;
+                if (prize == 0) Save.S.hints++; else if (prize == 1) Save.S.undos++; else if (prize == 2) Save.S.vacuums++;
                 Save.Commit();
                 FlyCoins(win.card.position);
                 win.Close();
                 DOVirtual.DelayedCall(1.0f, () => StartLevel(Save.S.level));   // straight into the next level
             };
-            UIKit.Pill(c, "Claim", "green", new Vector2(560, 160), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 250), () => { if (!claimed) finish(1); }, null, 70);
-            UIKit.Pill(c, "x2  WATCH AD", "orange", new Vector2(560, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 90), () =>
+            UIKit.Pill(c, "Claim " + coins, "green", new Vector2(560, 160), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 250), () => { if (!claimed) finish(1); }, null, 70);
+            UIKit.Pill(c, "Claim " + coins * 2 + "  AD", "orange", new Vector2(560, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 90), () =>
             {
                 if (claimed) return;
                 ShowAd(() => finish(2));
@@ -627,7 +635,8 @@ namespace SnakeJam
         void OnHint()
         {
             if (screen != Screen.Play) return;
-            if (Save.S.hints <= 0) { OpenShop(0); return; }
+            if (!PowerOpen(Save.HintUnlock)) { Toast("Hint unlocks at level " + Save.HintUnlock); return; }
+            if (Save.S.hints <= 0) { OfferPower(0); return; }
             if (board.UseHint()) { Save.S.hints--; Save.Commit(); }
             else Toast("No free snake to hint");
         }
@@ -635,7 +644,8 @@ namespace SnakeJam
         void OnUndo()
         {
             if (screen != Screen.Play) return;
-            if (Save.S.undos <= 0) { OpenShop(0); return; }
+            if (!PowerOpen(Save.UndoUnlock)) { Toast("Undo unlocks at level " + Save.UndoUnlock); return; }
+            if (Save.S.undos <= 0) { OfferPower(1); return; }
             if (!board.CanUndo) { Toast("Nothing to undo"); return; }
             if (board.UseUndo()) { Save.S.undos--; Save.Commit(); }
         }
@@ -643,8 +653,42 @@ namespace SnakeJam
         void OnVacuum()
         {
             if (screen != Screen.Play) return;
-            if (Save.S.vacuums <= 0) { OpenShop(0); return; }
+            if (!PowerOpen(Save.VacuumUnlock)) { Toast("Vacuum unlocks at level " + Save.VacuumUnlock); return; }
+            if (Save.S.vacuums <= 0) { OfferPower(2); return; }
             board.SetMode(board.mode == Board.Mode.Vacuum ? Board.Mode.Normal : Board.Mode.Vacuum);
+        }
+
+        // player has none of this power-up: buy one with coins, or watch an ad for one free use (2 ads per day for all power-ups)
+        static readonly int[] PowerPrice = { 150, 100, 250 };          // hint, undo, vacuum
+        static readonly string[] PowerName = { "HINT", "UNDO", "VACUUM" };
+        static readonly string[] PowerIcon = { "icon_hint", "icon_undo", "icon_vacuum" };
+
+        void GivePower(int kind, int n)
+        {
+            if (kind == 0) Save.S.hints += n; else if (kind == 1) Save.S.undos += n; else Save.S.vacuums += n;
+            Save.Commit();
+        }
+
+        void OfferPower(int kind)
+        {
+            if (modal != null && modal.dim != null) return;
+            Save.CheckAdDay();
+            modal = UIKit.Popup(cv, "NO " + PowerName[kind], new Vector2(900, 760));
+            var c = modal.content;
+            UIKit.Icon(c, PowerIcon[kind], new Vector2(190, 190), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -230));
+            UIKit.Pill(c, "BUY 1   " + PowerPrice[kind], "green", new Vector2(700, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 215), () =>
+            {
+                if (!Spend(PowerPrice[kind])) return;
+                GivePower(kind, 1); modal.Close();
+            }, "icon_coin", 46);
+            int left = Save.AdPowerPerDay - Save.S.adPower;
+            var ad = UIKit.Pill(c, left > 0 ? "1 FREE USE  AD  (" + left + " left)" : "AD LIMIT TODAY", left > 0 ? "orange" : "blue", new Vector2(700, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 55), () =>
+            {
+                Save.CheckAdDay();
+                if (Save.S.adPower >= Save.AdPowerPerDay) { Toast("No more free uses today"); return; }
+                ShowAd(() => { Save.S.adPower++; GivePower(kind, 1); modal.Close(); });
+            }, "icon_ad", 38);
+            if (left <= 0) ad.GetComponent<Image>().color = new Color(0.7f, 0.7f, 0.75f, 0.9f);
         }
 
         // ======================================================= lose / quit / lives
@@ -654,13 +698,17 @@ namespace SnakeJam
             modal = UIKit.Popup(cv, "OUT OF MOVES", new Vector2(900, 900), false);
             Sfx.Play("fail");
             var c = modal.content;
-            UIKit.Pill(c, "+5 MOVES  100", "green", new Vector2(700, 130), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -260), () =>
+            // first time in this attempt: free with an ad. After that: 300 coins.
+            if (!adMovesUsed)
             {
-                if (Spend(100, 0)) { modal.Close(); board.AddMoves(5); }
+                UIKit.Pill(c, "+5 MOVES  AD", "orange", new Vector2(700, 130), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -260), () =>
+                    ShowAd(() => { adMovesUsed = true; modal.Close(); board.AddMoves(5); }), "icon_ad", 46);
+            }
+            UIKit.Pill(c, "+5 MOVES  300", "green", new Vector2(700, 130), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, adMovesUsed ? -260 : -430), () =>
+            {
+                if (Spend(300)) { modal.Close(); board.AddMoves(5); }
             }, "icon_coin", 46);
-            UIKit.Pill(c, "+5 MOVES  AD", "orange", new Vector2(700, 130), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -430), () =>
-                ShowAd(() => { modal.Close(); board.AddMoves(5); }), "icon_ad", 46);
-            UIKit.Pill(c, board.data.level == 0 ? "BACK TO LAB" : "GIVE UP  -1 LIFE", "purple", new Vector2(700, 130), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -640), () =>
+            UIKit.Pill(c, board.data.level == 0 ? "BACK TO LAB" : "GIVE UP  -1 LIFE", "purple", new Vector2(700, 130), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, adMovesUsed ? -430 : -640), () =>
             {
                 modal.Close();
                 if (board.data.level == 0) { ShowMap(); OpenLab(); } else { Save.LoseLife(); ShowMap(); }
@@ -689,10 +737,17 @@ namespace SnakeJam
             var t = UIKit.Label(p.content, "Next life in " + (s / 60).ToString("00") + ":" + (s % 60).ToString("00"), 42, UIKit.Ink, TextAnchor.MiddleCenter, false);
             t.rectTransform.anchorMin = t.rectTransform.anchorMax = new Vector2(0.5f, 1);
             t.rectTransform.anchoredPosition = new Vector2(0, -420);
-            UIKit.Pill(p.content, "REFILL  250", "green", new Vector2(640, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 190), () =>
-            { if (Spend(250, 0)) { Save.AddLives(5); p.Close(); } }, "icon_coin", 44);
-            UIKit.Pill(p.content, "+1 LIFE  AD", "orange", new Vector2(640, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), () =>
-                ShowAd(() => { Save.AddLives(1); p.Close(); }), "icon_ad", 44);
+            Save.CheckAdDay();
+            UIKit.Pill(p.content, "REFILL  400", "green", new Vector2(640, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 190), () =>
+            { if (Spend(400)) { Save.AddLives(5); p.Close(); } }, "icon_coin", 44);
+            int left = Save.AdLivesPerDay - Save.S.adLives;
+            var ad = UIKit.Pill(p.content, left > 0 ? "+1 LIFE  AD  (" + left + " left)" : "AD LIMIT TODAY", left > 0 ? "orange" : "blue", new Vector2(640, 120), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), () =>
+            {
+                Save.CheckAdDay();
+                if (Save.S.adLives >= Save.AdLivesPerDay) { Toast("No more free lives today"); return; }
+                ShowAd(() => { Save.S.adLives++; Save.AddLives(1); p.Close(); });
+            }, "icon_ad", 40);
+            if (left <= 0) ad.GetComponent<Image>().color = new Color(0.7f, 0.7f, 0.75f, 0.9f);
         }
 
         // ======================================================= ads (placeholder)
@@ -786,7 +841,7 @@ namespace SnakeJam
             float y1 = y0 - 300;
             UIKit.Pill(c, "+9 POWER-UPS", "orange", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-240, y1), () => { Save.S.hints += 9; Save.S.undos += 9; Save.S.vacuums += 9; Save.Commit(); Toast("+9 hint, undo, vacuum"); }, null, 34);
             UIKit.Pill(c, "+9999 COINS", "orange", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(240, y1), () => { Save.S.coins += 9999; Save.Commit(); Toast("+9999 coins"); }, null, 34);
-            UIKit.Pill(c, "+99 GEMS", "purple", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-240, y1 - 118), () => { Save.S.gems += 99; Save.Commit(); Toast("+99 gems"); }, null, 34);
+            UIKit.Pill(c, "COINS = 0", "purple", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-240, y1 - 118), () => { Save.S.coins = 0; Save.Commit(); Toast("Coins set to 0"); }, null, 34);
             UIKit.Pill(c, "FULL LIVES", "purple", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(240, y1 - 118), () => { Save.AddLives(5); Toast("Lives full"); }, null, 34);
             Button unl = null;
             unl = UIKit.Pill(c, Save.S.adminUnlimited ? "UNLIMITED MOVES: ON" : "UNLIMITED MOVES: OFF", "green", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-240, y1 - 236), null, null, 28);
@@ -862,7 +917,7 @@ namespace SnakeJam
             {
                 int idx = i;
                 bool own = !previewShop || Save.S.ownedSkins.Contains(i);
-                string lbl = own ? Palette.SkinNames[i] : Palette.SkinNames[i] + "\n" + Palette.SkinGemPrice[i] + " gems";
+                string lbl = own ? Palette.SkinNames[i] : Palette.SkinNames[i] + "\n" + Palette.SkinCoinPrice[i] + " coins";
                 float x = i < 5 ? (i - 2) * 200f : (i - 5 - 1.5f) * 200f;
                 float y = i < 5 ? -245f : -345f;
                 var b = UIKit.Pill(p.transform, lbl, sc[i % 4], new Vector2(190, 95), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x, y), () =>
@@ -878,14 +933,14 @@ namespace SnakeJam
                 UIKit.Pill(p.transform, "BUY THEME " + Palette.ThemeCoinPrice[Save.S.theme], "orange", new Vector2(330, 95), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-360, 22), () =>
                 {
                     int t = Save.S.theme;
-                    if (Spend(Palette.ThemeCoinPrice[t], 0)) { Save.S.ownedThemes.Add(t); Save.S.theme = t; Save.Commit(); Toast("Theme unlocked!"); BuildPreview(); }
+                    if (Spend(Palette.ThemeCoinPrice[t])) { Save.S.ownedThemes.Add(t); Save.S.theme = t; Save.Commit(); Toast("Theme unlocked!"); BuildPreview(); }
                 }, "icon_coin", 28);
             if (buyS)
-                UIKit.Pill(p.transform, "BUY SKIN " + Palette.SkinGemPrice[Save.S.skin], "purple", new Vector2(330, 95), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(360, 22), () =>
+                UIKit.Pill(p.transform, "BUY SKIN " + Palette.SkinCoinPrice[Save.S.skin], "purple", new Vector2(330, 95), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(360, 22), () =>
                 {
                     int s = Save.S.skin;
-                    if (Spend(0, Palette.SkinGemPrice[s])) { Save.S.ownedSkins.Add(s); Save.S.skin = s; Save.Commit(); Toast("Skin unlocked!"); BuildPreview(); }
-                }, "icon_gem", 28);
+                    if (Spend(Palette.SkinCoinPrice[s])) { Save.S.ownedSkins.Add(s); Save.S.skin = s; Save.Commit(); Toast("Skin unlocked!"); BuildPreview(); }
+                }, "icon_coin", 28);
             UIKit.Pill(p.transform, "DONE", "green", new Vector2(300, 95), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 22), () =>
             {
                 bool shopM = previewShop, fromMap = previewFromMap;
@@ -944,8 +999,9 @@ namespace SnakeJam
 
         // ======================================================= daily gift
         static int Today() => (int)(DateTime.UtcNow - new DateTime(2024, 1, 1)).TotalDays;
-        static readonly string[] GiftLabels = { "50", "x1", "100", "x1", "5", "x1", "300" };
-        static readonly string[] GiftIcons = { "icon_coin", "icon_hint", "icon_coin", "icon_undo", "icon_gem", "icon_vacuum", "icon_gift" };
+        // 7 day streak: days 1, 2, 4, 5, 6 are just a stamp. Day 3 and day 7 are the big chests.
+        static readonly string[] GiftLabels = { "STAMP", "STAMP", "300 + Undo", "STAMP", "STAMP", "STAMP", "1000 + Vacuum + Hint" };
+        static readonly string[] GiftIcons = { "icon_star", "icon_star", "icon_coin", "icon_star", "icon_star", "icon_star", "icon_gift" };
 
         void MaybeShowGift()
         {
@@ -956,6 +1012,7 @@ namespace SnakeJam
         {
             if (modal != null && modal.dim != null) return;
             bool can = Save.S.lastGiftDay != Today();
+            if (can && Save.S.lastGiftDay > -1000 && Save.S.lastGiftDay < Today() - 1) Save.S.giftDay = 0;   // missed a day: the streak starts again
             modal = UIKit.Popup(cv, "DAILY GIFT", new Vector2(940, 1300));
             var c = modal.content;
             for (int i = 0; i < 7; i++)
@@ -972,23 +1029,19 @@ namespace SnakeJam
                 var d = UIKit.Label(tile.transform, "DAY " + (i + 1), 26, UIKit.Ink, TextAnchor.UpperCenter, false);
                 d.rectTransform.offsetMax = new Vector2(0, -12);
                 var ic = UIKit.Icon(tile.transform, GiftIcons[i], new Vector2(110, 110), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(big ? -90 : 0, 6));
-                var lb = UIKit.Label(tile.transform, GiftLabels[i], 40, UIKit.Ink, big ? TextAnchor.MiddleCenter : TextAnchor.LowerCenter, false);
+                var lb = UIKit.Label(tile.transform, done ? "DONE" : GiftLabels[i], i == 2 || i == 6 ? (big ? 36 : 28) : 34, UIKit.Ink, big ? TextAnchor.MiddleCenter : TextAnchor.LowerCenter, false);
                 if (big) lb.rectTransform.offsetMin = new Vector2(120, 0); else lb.rectTransform.offsetMax = new Vector2(0, 0);
                 if (done) ic.color = new Color(1, 1, 1, 0.45f);
             }
-            var claim = UIKit.Pill(c, can ? "CLAIM" : "COME BACK TOMORROW", can ? "green" : "blue", new Vector2(640, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), () =>
+            var claim = UIKit.Pill(c, can ? (Save.S.giftDay == 2 || Save.S.giftDay == 6 ? "CLAIM" : "CHECK IN") : "COME BACK TOMORROW", can ? "green" : "blue", new Vector2(640, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), () =>
             {
                 if (Save.S.lastGiftDay == Today()) return;
                 int day = Save.S.giftDay;
                 switch (day)
                 {
-                    case 0: Save.S.coins += 50; break;
-                    case 1: Save.S.hints += 1; break;
-                    case 2: Save.S.coins += 100; break;
-                    case 3: Save.S.undos += 1; break;
-                    case 4: Save.S.gems += 5; break;
-                    case 5: Save.S.vacuums += 1; break;
-                    default: Save.S.coins += 300; Save.S.gems += 10; break;
+                    case 2: Save.S.coins += 300; Save.S.undos += 1; break;
+                    case 6: Save.S.coins += 1000; Save.S.vacuums += 1; Save.S.hints += 1; break;
+                    default: break;       // stamp only
                 }
                 Save.S.lastGiftDay = Today(); Save.S.giftDay = (day + 1) % 7;
                 Sfx.Play("buy"); Save.Commit(); FlyCoins(modal.card.position); modal.Close();
@@ -1009,24 +1062,23 @@ namespace SnakeJam
         {
             var c = shop.content;
             foreach (Transform t in c) if (t.name.StartsWith("Pill_") || t.name == "ShopBody") Destroy(t.gameObject);
-            string[] tabs = { "POWER", "BUNDLES", "SKINS", "THEMES" };
-            string[] cols = { "blue", "green", "purple", "orange" };
-            for (int i = 0; i < 4; i++)
+            string[] tabs = { "POWER", "SKINS", "THEMES" };
+            string[] cols = { "blue", "purple", "orange" };
+            for (int i = 0; i < 3; i++)
             {
                 int idx = i;
-                var tb = UIKit.Pill(c, tabs[i], cols[i], new Vector2(215, 92), new Vector2(0, 1), new Vector2(0, 1), new Vector2(34 + i * 228, -150), () => { shopTab = idx; BuildShopTabs(); }, null, 34);
+                var tb = UIKit.Pill(c, tabs[i], cols[i], new Vector2(290, 92), new Vector2(0, 1), new Vector2(0, 1), new Vector2(34 + i * 305, -150), () => { shopTab = idx; BuildShopTabs(); }, null, 38);
                 if (i != shopTab) tb.GetComponent<Image>().color = new Color(1, 1, 1, 0.45f);
             }
             // rows share the free height evenly (no empty block at the bottom)
-            int rowsInTab = shopTab == 0 ? 6 : (shopTab == 1 ? 5 : (shopTab == 2 ? Palette.SkinNames.Length : Palette.ThemeNames.Length));
+            int rowsInTab = shopTab == 0 ? 7 : (shopTab == 1 ? Palette.SkinNames.Length : Palette.ThemeNames.Length);
             float bodyH = 1640f - 270f - 50f;
             rowStep = Mathf.Min(bodyH / rowsInTab, 230f); rowH = rowStep - 14f;
             shopBody = UIKit.Anchored(c, "ShopBody", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -270), new Vector2(920, bodyH));
             switch (shopTab)
             {
                 case 0: TabPower(); break;
-                case 1: TabBundles(); break;
-                case 2: TabSkins(); break;
+                case 1: TabSkins(); break;
                 default: TabThemes(); break;
             }
         }
@@ -1050,13 +1102,35 @@ namespace SnakeJam
             if (tryAct != null) UIKit.Pill(row.transform, "TRY", "green", new Vector2(150, 100), new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24 - 270 - 14, 0), tryAct, null, 34);
         }
 
-        bool Spend(int coins, int gems)
+        bool Spend(int coins)
         {
             if (Save.S.coins < coins) { Toast("Not enough coins"); return false; }
-            if (Save.S.gems < gems) { Toast("Not enough gems"); return false; }
-            Save.S.coins -= coins; Save.S.gems -= gems; Save.Commit();
+            Save.S.coins -= coins; Save.Commit();
             Sfx.Play("buy");
             return true;
+        }
+
+        // the + next to the coin number: 150 free coins for an ad (3 per day, 15 minutes apart)
+        void OpenFreeCoins()
+        {
+            if (modal != null && modal.dim != null) return;
+            if (shop != null && shop.dim != null) return;
+            Save.CheckAdDay();
+            int left = Save.AdCoinsPerDay - Save.S.adCoins;
+            int wait = Save.CoinAdWait();
+            modal = UIKit.Popup(cv, "FREE COINS", new Vector2(900, 720));
+            var c = modal.content;
+            UIKit.Icon(c, "coin_pile", new Vector2(300, 250), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -250));
+            string lbl = left <= 0 ? "COME BACK TOMORROW" : (wait > 0 ? "WAIT " + (wait / 60).ToString("00") + ":" + (wait % 60).ToString("00") : "+" + Save.AdCoinsAmount + "  AD  (" + left + " left)");
+            bool ok = left > 0 && wait <= 0;
+            var b = UIKit.Pill(c, lbl, ok ? "orange" : "blue", new Vector2(700, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 190), () =>
+            {
+                Save.CheckAdDay();
+                if (Save.S.adCoins >= Save.AdCoinsPerDay || Save.CoinAdWait() > 0) { Toast("Not ready yet"); return; }
+                ShowAd(() => { Save.S.adCoins++; Save.S.adCoinsLastUnix = Save.Now(); Grant(0, 0, 0, Save.AdCoinsAmount); Sfx.Play("coin"); FlyCoins(modal.card.position); modal.Close(); });
+            }, "icon_ad", 40);
+            if (!ok) b.GetComponent<Image>().color = new Color(0.7f, 0.7f, 0.75f, 0.9f);
+            UIKit.Pill(c, "SHOP", "green", new Vector2(700, 110), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), () => { modal.Close(); OpenShop(0); }, "icon_shop", 40);
         }
 
         void Grant(int hint, int undo, int vac, int coins)
@@ -1067,23 +1141,21 @@ namespace SnakeJam
 
         void TabPower()
         {
-            bool daily = Save.S.lastDailyDay != Today();
-            Row(0, "icon_gift", "Watch & Win", "1 Undo + 1 Hint + 100 Coins", daily ? "FREE" : "TOMORROW", "green",
-                () => ShowAd(() => { Save.S.lastDailyDay = Today(); Grant(1, 1, 0, 100); Sfx.Play("buy"); BuildShopTabs(); }), daily, "icon_ad");
-            Row(1, "icon_hint", "Hint x1", "Shows the next free snake", "100", "blue", () => { if (Spend(100, 0)) { Grant(1, 0, 0, 0); } }, true, "icon_coin");
-            Row(2, "icon_undo", "Undo x1", "Bring back the last snake", "100", "blue", () => { if (Spend(100, 0)) { Grant(0, 1, 0, 0); } }, true, "icon_coin");
-            Row(3, "icon_vacuum", "Vacuum x1", "Remove any one snake", "150", "blue", () => { if (Spend(150, 0)) { Grant(0, 0, 1, 0); } }, true, "icon_coin");
-            Row(4, "icon_heart", "Refill Lives", "Get all 5 lives back", "250", "green", () => { if (Spend(250, 0)) Save.AddLives(5); }, true, "icon_coin");
-            Row(5, "icon_coin", "Free Coins", "Watch an ad for 150 coins", "WATCH", "orange", () => ShowAd(() => { Grant(0, 0, 0, 150); Sfx.Play("coin"); }), true, "icon_ad");
-        }
-
-        void TabBundles()
-        {
-            Row(0, "icon_gift", "Starter Pack", "3 Hints + 3 Undos + 1 Life", "500", "green", () => { if (Spend(500, 0)) { Grant(3, 3, 0, 0); Save.AddLives(1); } }, true, "icon_coin");
-            Row(1, "icon_gift", "Mega Jam Breaker", "5 Hints + 5 Undos + 2 Vacuums", "1200", "green", () => { if (Spend(1200, 0)) Grant(5, 5, 2, 0); }, true, "icon_coin");
-            Row(2, "icon_ad", "Ad Bundle", "Watch an ad: 1 of each power-up", "WATCH", "orange", () => ShowAd(() => { Grant(1, 1, 1, 0); Sfx.Play("buy"); }), true, "icon_ad");
-            Row(3, "icon_coin", "Coin Pouch", "10 gems for 600 coins", "10", "purple", () => { if (Spend(0, 10)) Grant(0, 0, 0, 600); }, true, "icon_gem");
-            Row(4, "icon_star", "Premium Pack", "Store not connected yet", "$4.99", "orange", () => Toast("Real-money store not connected yet"), true);
+            Row(0, "icon_undo", "Undo x1", "Bring back the last snake", "100", "blue", () => { if (Spend(100)) Grant(0, 1, 0, 0); }, true, "icon_coin");
+            Row(1, "icon_hint", "Hint x1", "Shows the next free snake", "150", "blue", () => { if (Spend(150)) Grant(1, 0, 0, 0); }, true, "icon_coin");
+            Row(2, "icon_vacuum", "Vacuum x1", "Remove any one snake", "250", "blue", () => { if (Spend(250)) Grant(0, 0, 1, 0); }, true, "icon_coin");
+            Row(3, "icon_gift", "Starter Pack", "3 Hints + 3 Undos + 1 Life", "700", "green", () => { if (Spend(700)) { Grant(3, 3, 0, 0); Save.AddLives(1); } }, true, "icon_coin");
+            Row(4, "icon_gift", "Mega Jam Breaker", "5 Hints + 5 Undos + 2 Vacuums", "1500", "green", () => { if (Spend(1500)) Grant(5, 5, 2, 0); }, true, "icon_coin");
+            Row(5, "icon_heart", "Refill Lives", "Get all 5 lives back", "400", "green", () => { if (Spend(400)) Save.AddLives(5); }, true, "icon_coin");
+            Save.CheckAdDay();
+            int left = Save.AdCoinsPerDay - Save.S.adCoins, wait = Save.CoinAdWait();
+            bool ready = left > 0 && wait <= 0;
+            Row(6, "icon_coin", "Free Coins", left <= 0 ? "Come back tomorrow" : (wait > 0 ? "Next ad in " + (wait / 60) + " min" : "Watch an ad: +" + Save.AdCoinsAmount + " (" + left + " left today)"), ready ? "WATCH" : "WAIT", "orange", () =>
+            {
+                Save.CheckAdDay();
+                if (Save.S.adCoins >= Save.AdCoinsPerDay || Save.CoinAdWait() > 0) { Toast("Not ready yet"); return; }
+                ShowAd(() => { Save.S.adCoins++; Save.S.adCoinsLastUnix = Save.Now(); Grant(0, 0, 0, Save.AdCoinsAmount); Sfx.Play("coin"); BuildShopTabs(); });
+            }, ready, "icon_ad");
         }
 
         void TabSkins()
@@ -1093,13 +1165,13 @@ namespace SnakeJam
                 int idx = i;
                 bool owned = Save.S.ownedSkins.Contains(i);
                 bool equipped = Save.S.skin == i;
-                string lbl = equipped ? "EQUIPPED" : (owned ? "EQUIP" : Palette.SkinGemPrice[i].ToString());
+                string lbl = equipped ? "EQUIPPED" : (owned ? "EQUIP" : Palette.SkinCoinPrice[i].ToString());
                 Row(i, "snake_body", Palette.SkinNames[i], "", lbl, owned ? "green" : "purple", () =>
                 {
-                    if (!Save.S.ownedSkins.Contains(idx)) { if (!Spend(0, Palette.SkinGemPrice[idx])) return; Save.S.ownedSkins.Add(idx); }
+                    if (!Save.S.ownedSkins.Contains(idx)) { if (!Spend(Palette.SkinCoinPrice[idx])) return; Save.S.ownedSkins.Add(idx); }
                     Save.S.skin = idx; Save.Commit(); BuildShopTabs();
                     if (screen == Screen.Play) StartLevel(board.data.level);
-                }, !equipped, owned ? null : "icon_gem", owned ? null : (Action)(() => { shop.Close(); OpenPreview(true); }));
+                }, !equipped, owned ? null : "icon_coin", owned ? null : (Action)(() => { shop.Close(); OpenPreview(true); }));
                 var row = shopBody.GetChild(shopBody.childCount - 1);
                 var cols = Palette.Skin(i);
                 row.GetChild(0).GetComponent<Image>().color = cols[0];
@@ -1118,7 +1190,7 @@ namespace SnakeJam
                 string lbl = equipped ? "IN USE" : (owned ? "USE" : Palette.ThemeCoinPrice[i].ToString());
                 Row(i, "icon_star", Palette.ThemeNames[i] + " board", owned ? "Owned" : "Buy with coins", lbl, owned ? "green" : "orange", () =>
                 {
-                    if (!Save.S.ownedThemes.Contains(idx)) { if (!Spend(Palette.ThemeCoinPrice[idx], 0)) return; Save.S.ownedThemes.Add(idx); }
+                    if (!Save.S.ownedThemes.Contains(idx)) { if (!Spend(Palette.ThemeCoinPrice[idx])) return; Save.S.ownedThemes.Add(idx); }
                     Save.S.theme = idx; Save.Commit(); ApplyTheme(); BuildShopTabs();
                     if (screen == Screen.Play) StartLevel(board.data.level);
                 }, !equipped, owned ? null : "icon_coin", owned ? null : (Action)(() => { shop.Close(); OpenPreview(true); }));
