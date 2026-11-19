@@ -1066,8 +1066,15 @@ namespace SnakeJam
             }
         }
 
+        static float FillOf(LevelData d)
+        {
+            int sc = 0; foreach (var s in d.snakes) sc += s.cells.Count;
+            return sc / (float)Mathf.Max(1, d.MaskCount());
+        }
+
         static LevelData Generate(string shape, int n, int seed, GenParams p, int level, List<Vector2Int> walls = null)
         {
+            LevelData best = null; float bestFill = -1f;
             for (int attempt = 0; attempt < 12; attempt++)
             {
                 var rng = new System.Random(seed + attempt * 9973);
@@ -1103,8 +1110,16 @@ namespace SnakeJam
                     if (p.drills > 0 && d.rocks.Count == 0) continue;
                     if (p.frozen > 0 && !d.HasFrozen) continue;
                 }
-                if (IsSolvable(d)) return d;
+                if (p.roadPaths != null && d.roads.Count == 0) continue;      // a road picture level must keep its road
+                if (IsSolvable(d))
+                {
+                    // keep the fullest board; stop as soon as one is full enough
+                    float fl = FillOf(d);
+                    if (fl > bestFill) { best = d; bestFill = fl; }
+                    if (bestFill >= 0.74f) return best;
+                }
             }
+            if (best != null) return best;
             // fall back to the simplest board so the game never gets stuck
             var fb = Generate("Square", 5, seed + 1, new GenParams { minLen = 3, maxLen = 4, turn = 0.2f, fill = 0.6f }, level);
             return fb;
