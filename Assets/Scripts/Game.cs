@@ -357,7 +357,7 @@ namespace SnakeJam
             BuildChip(topBar, "icon_coin", new Vector2(24, -(40 + top)), new Vector2(300, 90), false, coinTexts, out hudCoinChip);
 
             movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(350, -(34 + top)), new Vector2(290, 120), Color.white, "MovesBox");
-            UIKit.Skin(movesBox, "pill_green", 70, 60);
+            UIKit.Skin(movesBox, "chip", 78, 45);
             movesTxt = UIKit.Label(movesBox.transform, "Moves: 0", 46, Color.white);
             movesTxt.rectTransform.offsetMin = new Vector2(0, 36);
             levelLblTxt = UIKit.Label(movesBox.transform, "Level 1", 26, Color.white);
@@ -430,7 +430,7 @@ namespace SnakeJam
             board.SetVisible(true);
             board.Load(data);
             ApplyTheme();
-            UIKit.Skin(movesBox, data.hard ? "pill_purple" : "pill_green", 70, 60);
+            if (data.hard) UIKit.Skin(movesBox, "pill_purple", 70, 60); else UIKit.Skin(movesBox, "chip", 78, 45);
             if (movesSkull != null) movesSkull.gameObject.SetActive(data.hard);
             HideTut();
             if (data.hard && data.level > 0) DOVirtual.DelayedCall(0.3f, ShowHardIntro);
