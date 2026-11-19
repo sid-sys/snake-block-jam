@@ -401,7 +401,7 @@ namespace SnakeJam
             edgeFlash.sprite = EdgeSprite(); edgeFlash.color = new Color(1, 1, 1, 0); edgeFlash.raycastTarget = false;
 
             var hg = UIKit.Icon(hudRoot, "hand", new Vector2(190, 200), new Vector2(0.5f, 0.5f), new Vector2(0.15f, 0.9f), Vector2.zero);
-            hand = hg; hand.gameObject.SetActive(false);
+            hand = hg; hand.sprite = Art.HandYellow; hand.gameObject.SetActive(false);
         }
 
         void StartLevel(int lvl) { StartData(LevelGen.Build(lvl)); }
@@ -468,6 +468,15 @@ namespace SnakeJam
         }
 
         // ---------- tutorial hand ----------
+        // the hand hangs right and below its tip: keep the whole hand inside the screen
+        Vector2 KeepHandOnScreen(Vector2 lp)
+        {
+            var r = ((RectTransform)cv.transform).rect;
+            lp.x = Mathf.Clamp(lp.x, r.xMin + 40, r.xMax - 175);
+            lp.y = Mathf.Clamp(lp.y, r.yMin + 195, r.yMax - 40);
+            return lp;
+        }
+
         void ShowHand()
         {
             if (screen != Screen.Play || Save.S.tutorialDone) return;
@@ -476,7 +485,7 @@ namespace SnakeJam
             Vector2 sp = cam.WorldToScreenPoint(s.HeadPos);
             RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)cv.transform, sp, cam, out var lp);
             hand.gameObject.SetActive(true);
-            hand.rectTransform.anchoredPosition = lp;
+            hand.rectTransform.anchoredPosition = KeepHandOnScreen(lp);
             hand.transform.DOKill();
             hand.transform.localScale = Vector3.one;
             var seq = DOTween.Sequence();
@@ -751,7 +760,7 @@ namespace SnakeJam
             if (hand == null) return;
             RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)cv.transform, sp, cam, out var lp);
             hand.gameObject.SetActive(true);
-            hand.rectTransform.anchoredPosition = lp;
+            hand.rectTransform.anchoredPosition = KeepHandOnScreen(lp);
             hand.transform.DOKill();
             hand.transform.localScale = Vector3.one;
             var seq = DOTween.Sequence();

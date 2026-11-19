@@ -1143,17 +1143,17 @@ namespace SnakeJam
             }
             else if (level <= 30)
             {
-                string[] pool = { "Square", "Fish", "Circle", "House", "Diamond", "Hexagon", "Triangle", "Arrow", "Cross", "Heart", "Octagon", "Flower" };
+                string[] pool = { "Square", "Circle", "Diamond", "Hexagon", "Triangle", "Arrow", "Cross", "Heart", "Octagon", "Flower" };
                 shape = pool[level % pool.Length]; n = 8 + (level - 10) / 3;
             }
             else if (level <= 70)
             {
-                string[] pool = { "Cat", "Star", "Rabbit", "Circle", "Tree", "Heart", "Rocket", "Ring", "Butterfly", "Flower", "Mushroom", "Elephant", "Crown", "Gear", "Hourglass", "T", "Staircase", "Cross", "Diamond", "Fish", "House" };
+                string[] pool = { "Star", "Circle", "Tree", "Heart", "Rocket", "Ring", "Butterfly", "Flower", "Mushroom", "Elephant", "Crown", "Gear", "Hourglass", "T", "Staircase", "Cross", "Diamond" };
                 shape = pool[level % pool.Length]; n = 14 + (level - 30) / 5;
             }
             else
             {
-                string[] pool = { "Butterfly", "Star", "Cat", "Heart", "Rocket", "Gear", "Rabbit", "Crown", "Elephant", "Tree", "Mushroom", "Fish", "House", "Hexagon", "Flower", "Ring" };
+                string[] pool = { "Butterfly", "Star", "Heart", "Rocket", "Gear", "Crown", "Elephant", "Tree", "Mushroom", "Hexagon", "Flower", "Ring" };
                 shape = pool[level % pool.Length]; n = 20 + Mathf.Min(6, (level - 70) / 10);
             }
             if (breather) { shape = "Square"; n = Mathf.Max(4, n - 3); }

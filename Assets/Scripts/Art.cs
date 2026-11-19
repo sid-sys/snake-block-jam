@@ -156,6 +156,50 @@ namespace SnakeJam
             }
         }
 
+        static Sprite handY;
+        static float DCap(float px, float py, float ax, float ay, float bx, float by, float r)
+        {
+            float pax = px - ax, pay = py - ay, bax = bx - ax, bay = by - ay;
+            float h = Mathf.Clamp01((pax * bax + pay * bay) / (bax * bax + bay * bay));
+            float dx = pax - bax * h, dy = pay - bay * h;
+            return Mathf.Sqrt(dx * dx + dy * dy) - r;
+        }
+        static float DBox(float px, float py, float cx, float cy, float hx, float hy, float r)
+        {
+            float qx = Mathf.Abs(px - cx) - hx + r, qy = Mathf.Abs(py - cy) - hy + r;
+            return Mathf.Sqrt(Mathf.Max(qx, 0) * Mathf.Max(qx, 0) + Mathf.Max(qy, 0) * Mathf.Max(qy, 0)) + Mathf.Min(Mathf.Max(qx, qy), 0) - r;
+        }
+        // yellow pointing hand (fingertip at the top left) with a dark gold edge
+        public static Sprite HandYellow
+        {
+            get
+            {
+                if (handY != null) return handY;
+                const int N = 160;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                float k = N / 64f;
+                var fill = new Color(1f, 0.84f, 0.16f, 1f); var edge = new Color(0.78f, 0.52f, 0.02f, 1f); var hi = new Color(1f, 0.95f, 0.6f, 1f);
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float px = (x + 0.5f) / k, py = (y + 0.5f) / k;
+                        float d = DCap(px, py, 13f, 54f, 13f, 34f, 5.2f);              // pointing finger
+                        d = Mathf.Min(d, DBox(px, py, 28f, 22f, 21f, 15f, 9f));        // palm
+                        d = Mathf.Min(d, DCap(px, py, 49f, 30f, 53f, 22f, 5f));        // thumb on the right
+                        float a = Mathf.Clamp01(0.5f - d * k * 0.5f);
+                        float ring = Mathf.Clamp01((d + 1.7f) * k * 0.5f + 0.5f);       // 0 inside, 1 on the edge
+                        Color c = Color.Lerp(fill, edge, ring);
+                        float sh = Mathf.Clamp01(1f - Vector2.Distance(new Vector2(px, py), new Vector2(11f, 49f)) / 5f);
+                        c = Color.Lerp(c, hi, sh * 0.8f * (1f - ring));
+                        // finger lines on the palm
+                        if (py < 20f && py > 10f && Mathf.Abs(((px - 16f) % 8f)) < 0.5f && px > 16f && px < 42f) c = Color.Lerp(c, edge, 0.7f);
+                        t.SetPixel(x, y, new Color(c.r, c.g, c.b, a));
+                    }
+                t.Apply();
+                return handY = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f);
+            }
+        }
+
         static Sprite skullBig, stripes;
         // big red skull with a thick white outline (hard level banner)
         public static Sprite SkullBig
