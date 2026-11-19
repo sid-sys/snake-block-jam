@@ -254,9 +254,9 @@ namespace SnakeJam
             // bottom row: SHOP | PLAY | GIFT (the middle of the screen belongs to the level path)
             nodesRoot = UIKit.Stretch(mapRoot, "Nodes");
             float ny = 90 + bottom;
-            UIKit.ImageButton(mapRoot, "btn_shop", 310, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-370, ny + 10), () => OpenShop(0));
+            UIKit.ImageButton(mapRoot, "btn_shop", 285, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-375, ny + 10), () => OpenShop(0));
             UIKit.ImageButton(mapRoot, "btn_play", 420, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, ny), OnPlayPressed);
-            UIKit.ImageButton(mapRoot, "btn_gift", 310, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(370, ny + 10), OpenGift);
+            UIKit.ImageButton(mapRoot, "btn_gift", 285, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(375, ny + 10), OpenGift);
         }
 
         void ShowMap()
@@ -359,10 +359,10 @@ namespace SnakeJam
 
             float by = 70 + bottom;
             // the words HINT / UNDO / VACUUM / SHOP are part of the button pictures; a small badge shows the count (or "Lv N" until unlocked)
-            hintB = UIKit.ImageButton(bottomBar, "btn_hint", 250, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-390, by + 10), OnHint);
-            undoB = UIKit.ImageButton(bottomBar, "btn_undo", 250, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-130, by + 10), OnUndo);
-            vacB = UIKit.ImageButton(bottomBar, "btn_vacuum", 250, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(130, by + 10), OnVacuum);
-            UIKit.ImageButton(bottomBar, "btn_shop", 250, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(390, by + 10), () => OpenShop(0));
+            hintB = UIKit.ImageButton(bottomBar, "btn_hint", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-375, by + 10), OnHint);
+            undoB = UIKit.ImageButton(bottomBar, "btn_undo", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-125, by + 10), OnUndo);
+            vacB = UIKit.ImageButton(bottomBar, "btn_vacuum", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(125, by + 10), OnVacuum);
+            UIKit.ImageButton(bottomBar, "btn_shop", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(375, by + 10), () => OpenShop(0));
             UIKit.Badge((RectTransform)hintB.transform, "2");
             UIKit.Badge((RectTransform)undoB.transform, "2");
             UIKit.Badge((RectTransform)vacB.transform, "1");

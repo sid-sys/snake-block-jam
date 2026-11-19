@@ -201,10 +201,10 @@ namespace SnakeJam
         // small dark number badge on the top right corner of a button (the count of a power-up, or its unlock level)
         public static TMP_Text Badge(RectTransform button, string text)
         {
-            var chip = Panel(button, new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-16, -2), new Vector2(120, 62), Chip, "Badge");
-            Skin(chip, "chip", 78, 31);
-            var t = Label(chip.transform, text, 38, Color.white);
-            FitText(t, 38);
+            var chip = Panel(button, new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-20, -4), new Vector2(104, 52), Color.white, "Badge");
+            Skin(chip, "pill_red", 70, 26);
+            var t = Label(chip.transform, text, 36, Color.white);
+            FitText(t, 36);
             return t;
         }
 
