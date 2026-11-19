@@ -208,6 +208,36 @@ namespace SnakeJam
             return t;
         }
 
+        // power-up button: icon on a glossy square tile, small round count badge under it, no words
+        public static Button PowerTile(Transform parent, string tile, string icon, float width, Vector2 pos, Action click)
+        {
+            var b = ImageButton(parent, tile, width, new Vector2(0.5f, 0), new Vector2(0.5f, 0), pos, click);
+            var rt = (RectTransform)b.transform;
+            float s = width * 0.58f;
+            Icon(rt, icon, new Vector2(s, s), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 4));
+            var bd = Anchored(rt, "Badge", new Vector2(0.5f, 0), new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(width * 0.42f, width * 0.42f));
+            var im = bd.gameObject.AddComponent<Image>();
+            im.sprite = Art.Get("round_blue"); im.raycastTarget = false;
+            var t = Label(bd, "0", 40, Color.white);
+            FitText(t, 40);
+            return b;
+        }
+
+        // plain text (mixed case, no picture letters) for small captions such as "Moves: 12"
+        public static void PlainText(TMP_Text t)
+        {
+            t.textPreprocessor = null; t.richText = false; t.spriteAsset = null;
+            t.text = t.text;
+        }
+
+        // 1,234 below 10,000 then 12.5K, 1.2M
+        public static string Compact(long n)
+        {
+            if (n < 10000) return n.ToString("N0");
+            if (n < 1000000) return (n / 1000f).ToString(n < 100000 ? "0.#" : "0") + "K";
+            return (n / 1000000f).ToString(n < 10000000 ? "0.##" : "0.#") + "M";
+        }
+
         // text shrinks by itself when it is too long for its box (never grows past maxSize)
         public static void FitText(TMP_Text t, float maxSize)
         {

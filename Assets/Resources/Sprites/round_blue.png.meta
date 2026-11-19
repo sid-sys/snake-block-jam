@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 57e7ab1d551c4426b94ad2a8683139f4
+guid: abdb153cbc4182442c8f49ea37512949
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -123,29 +123,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: node_green_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 254
-        height: 256
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: c0e5db7a81e8fd1ed785e57a721d5134
-      internalID: -6355415898925129528
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     customData: 
     physicsShape: []
@@ -159,8 +137,7 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable:
-      node_green_0: -6355415898925129528
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

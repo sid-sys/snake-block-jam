@@ -559,7 +559,7 @@ namespace SnakeJam
                     if (!placed) fails++;
                 }
                 // gap fill: try every free cell in every direction, emptiest places first, with shorter snakes too.
-                for (int pass = 0; pass < 6 && d.snakes.Count < p.cap && occ.Count < total * Mathf.Min(0.97f, p.fill + 0.12f); pass++)
+                for (int pass = 0; pass < 8 && d.snakes.Count < p.cap && occ.Count < total * Mathf.Min(1f, p.fill + 0.12f); pass++)
                 {
                     var cand = new List<(Vector2Int c, int far)>();
                     for (int x = 0; x < d.w; x++)
@@ -580,7 +580,7 @@ namespace SnakeJam
                     int added = 0;
                     foreach (var cd in cand)
                     {
-                        if (d.snakes.Count >= p.cap || occ.Count >= total * Mathf.Min(0.97f, p.fill + 0.12f)) break;
+                        if (d.snakes.Count >= p.cap || occ.Count >= total * Mathf.Min(1f, p.fill + 0.12f)) break;
                         if (occ.ContainsKey(Rules.Key(cd.c, 0)) || !Free(cd.c)) continue;
                         bool ok = false;
                         foreach (var dir in Dirs)
@@ -595,6 +595,78 @@ namespace SnakeJam
                         if (ok) added++;
                     }
                     if (added == 0) break;
+                }
+                // last step: grow snake tails into the free cells that are left, so the board is full like the reference levels.
+                // (only on levels without a snake cap: the first levels keep a few short snakes on purpose)
+                if (p.cap >= 999) Extend();
+            }
+
+            // grow the tail of one snake by one cell. Snakes leave in the reverse order they were placed, so snake i
+            // only has to get past snakes with a smaller number, and no snake with a bigger number may be blocked by the new cell.
+            bool TryExtend(int i, Vector2Int nc)
+            {
+                var def = d.snakes[i]; var old = def.cells;
+                var nl = new List<Vector2Int>(old) { nc };
+                var oldKeys = new List<long>();
+                for (int k = 0; k < old.Count; k++) oldKeys.Add(Rules.Key(old[k], R.CellAxis(old, k)));
+                foreach (var k in oldKeys) occ.Remove(k);
+                bool ok = true;
+                var keys = new List<long>();
+                var own = new HashSet<Vector2Int>();
+                for (int k = 0; k < nl.Count && ok; k++)
+                {
+                    var c = nl[k];
+                    if (!R.InB(c) || !Free(c) || !own.Add(c)) { ok = false; break; }
+                    int ax = R.CellAxis(nl, k);
+                    if (ax < 0) { ok = false; break; }
+                    long key = Rules.Key(c, ax);
+                    if (occ.ContainsKey(key) || (ax != 0 && occ.ContainsKey(Rules.Key(c, 0)))) { ok = false; break; }
+                    keys.Add(key);
+                }
+                if (ok && d.HasRoad) foreach (var rc in nl) if (d.roads.Contains(rc) && !d.bridges.Contains(rc)) { ok = false; break; }
+                if (ok && nearRoad.Contains(nc)) ok = false;
+                if (ok)
+                {
+                    def.cells = nl;
+                    var ray = R.Cast(def, k => occ.TryGetValue(k, out int v) && v < i ? v : -1, -1, NoRocks);
+                    if (!ray.exits) ok = false;
+                    else foreach (var c in ray.fwd) if (own.Contains(c)) { ok = false; break; }
+                    if (!ok) def.cells = old;
+                }
+                if (ok)
+                {
+                    // snakes placed later leave earlier: the new cell must not stand in their way
+                    for (int j = i + 1; j < d.snakes.Count && ok; j++)
+                    {
+                        var fwd = R.Forward(d.snakes[j].cells[0], d.snakes[j].Dir);
+                        if (fwd.Contains(nc)) ok = false;
+                    }
+                    if (!ok) def.cells = old;
+                }
+                if (ok) { foreach (var k in keys) occ[k] = i; return true; }
+                foreach (var k in oldKeys) occ[k] = i;
+                return false;
+            }
+
+            void Extend()
+            {
+                for (int round = 0; round < 12; round++)
+                {
+                    bool grew = false;
+                    for (int i = 0; i < d.snakes.Count; i++)
+                    {
+                        var cells = d.snakes[i].cells;
+                        var tail = cells[cells.Count - 1];
+                        var order = new List<Vector2Int>(Dirs);
+                        for (int a = order.Count - 1; a > 0; a--) { int b = rng.Next(a + 1); var t = order[a]; order[a] = order[b]; order[b] = t; }
+                        foreach (var dir in order)
+                        {
+                            var nc = tail + dir;
+                            if (!R.InB(nc) || !Free(nc) || d.bridges.Contains(nc) || occ.ContainsKey(Rules.Key(nc, 0))) continue;
+                            if (TryExtend(i, nc)) { grew = true; break; }
+                        }
+                    }
+                    if (!grew) break;
                 }
             }
         }
@@ -1029,7 +1101,7 @@ namespace SnakeJam
             p.minLen = level <= 10 ? 3 : 2 + Mathf.RoundToInt(dd * 3f);
             p.maxLen = level <= 3 ? 4 : (level <= 10 ? Mathf.Min(5, 4 + level / 4) : 4 + Mathf.RoundToInt(dd * 6f));
             p.turn = level <= 10 ? 0.05f + level * 0.02f : 0.18f + 0.45f * dd;
-            p.fill = level <= 10 ? 0.45f + level * 0.02f : 0.78f + 0.17f * dd;
+            p.fill = level <= 10 ? 0.55f + level * 0.03f : 0.9f + 0.08f * dd;
             if (level <= 3) p.cap = 3; else if (level <= 10) p.cap = 4 + level / 3;
             // mechanic roadmap: one new mechanic per chapter, always on level X2 (roads 12, lights 22, portals 32, drills 42, frozen 46)
             int pos = level % 10;

@@ -141,7 +141,7 @@ namespace SnakeJam
 
         public static readonly Color DotLight = new Color(0.45f, 0.55f, 0.7f, 0.55f);
 
-        public static readonly string[] ThemeNames = { "Sky", "Mint", "Candy Land", "Night", "Paper" };
+        public static readonly string[] ThemeNames = { "Sky", "Mint", "Candy Land", "Classic", "Night" };
         public static readonly int[] ThemeCoinPrice = { 1500, 1200, 2400, 0, 1800 };
         // top, bottom background colours
         public static void Theme(int i, out Color top, out Color bottom, out Color tile)
@@ -150,8 +150,8 @@ namespace SnakeJam
             {
                 case 1: top = H("#D9FBEA"); bottom = H("#8FE3C0"); tile = H("#FFFFFF"); break;
                 case 2: top = H("#FFE0F2"); bottom = H("#FFB5DD"); tile = H("#FFFFFF"); break;
-                case 3: top = H("#3A3F7A"); bottom = H("#1B1E48"); tile = H("#7C86D8"); break;
-                case 4: top = H("#F6F6F8"); bottom = H("#CFCFD6"); tile = H("#FFFFFF"); break;
+                case 3: top = H("#FFFFFF"); bottom = H("#E4EFFA"); tile = H("#FFFFFF"); break;      // Classic: white play field (default)
+                case 4: top = H("#3A3F7A"); bottom = H("#1B1E48"); tile = H("#7C86D8"); break;      // Night
                 default: top = H("#DDEFFF"); bottom = H("#8FC9F5"); tile = H("#FFFFFF"); break;
             }
         }

@@ -38,8 +38,8 @@ namespace SnakeJam
         bool iced;
         Tween drillSpin;
         int[] baseOrder; bool[] over; int headOrderBase;
-        const float BodyW = 0.6f;               // ribbon width in cells
-        const float HeadW = 0.74f;
+        const float BodyW = 0.84f;              // ribbon width in cells (almost the full cell, so full boards look tight)
+        const float HeadW = 0.94f;
         const int Sub = 3;                       // pieces per cell
         const float SpriteUnits = 1.1f;          // body sprite is ~1.1 world units
         const int OverBonus = 2000;
@@ -63,7 +63,7 @@ namespace SnakeJam
                 sr.sortingOrder = baseOrder[j];
                 float w = j == 0 ? HeadW : BodyW;
                 int fromEnd = m - 1 - j;
-                if (j != 0 && fromEnd < Sub * 2) w *= Mathf.Lerp(0.5f, 1f, fromEnd / (Sub * 2f));
+                if (j != 0 && fromEnd < Sub * 2) w *= Mathf.Lerp(0.72f, 1f, fromEnd / (Sub * 2f));
                 widthOf[j] = w;
                 baseScale[j] = w / sr.sprite.bounds.size.x;
                 go.transform.localScale = Vector3.one * baseScale[j];

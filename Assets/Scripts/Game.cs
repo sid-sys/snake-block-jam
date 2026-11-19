@@ -251,12 +251,14 @@ namespace SnakeJam
 
             UIKit.ImageButton(mapRoot, "btn_gear", 96, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -(40 + top)), OpenSettings);
 
-            // bottom row: SHOP | PLAY | GIFT (the middle of the screen belongs to the level path)
+            // second row: GIFT on the left, SHOP on the right (pictures only, no words)
+            UIKit.ImageButton(mapRoot, "icon_gift", 130, new Vector2(0, 1), new Vector2(0, 1), new Vector2(34, -(170 + top)), OpenGift);
+            UIKit.ImageButton(mapRoot, "icon_shop", 130, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-34, -(170 + top)), () => OpenShop(0));
+
+            // bottom: only PLAY (the middle of the screen belongs to the level path)
             nodesRoot = UIKit.Stretch(mapRoot, "Nodes");
             float ny = 90 + bottom;
-            UIKit.ImageButton(mapRoot, "btn_shop", 285, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-375, ny + 10), () => OpenShop(0));
             UIKit.ImageButton(mapRoot, "btn_play", 420, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, ny), OnPlayPressed);
-            UIKit.ImageButton(mapRoot, "btn_gift", 285, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(375, ny + 10), OpenGift);
         }
 
         void ShowMap()
@@ -343,6 +345,7 @@ namespace SnakeJam
             levelLblTxt = UIKit.Label(movesBox.transform, "Level 1", 26, Color.white);
             levelLblTxt.rectTransform.offsetMin = new Vector2(0, 14);
             levelLblTxt.rectTransform.offsetMax = new Vector2(0, -76);
+            UIKit.PlainText(movesTxt); UIKit.PlainText(levelLblTxt);
 
             var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(696, -(40 + top)), new Vector2(190, 90), UIKit.Chip, "LivesChip");
             UIKit.Skin(hl, "chip", 78, 45);
@@ -359,13 +362,9 @@ namespace SnakeJam
 
             float by = 70 + bottom;
             // the words HINT / UNDO / VACUUM / SHOP are part of the button pictures; a small badge shows the count (or "Lv N" until unlocked)
-            hintB = UIKit.ImageButton(bottomBar, "btn_hint", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-375, by + 10), OnHint);
-            undoB = UIKit.ImageButton(bottomBar, "btn_undo", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-125, by + 10), OnUndo);
-            vacB = UIKit.ImageButton(bottomBar, "btn_vacuum", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(125, by + 10), OnVacuum);
-            UIKit.ImageButton(bottomBar, "btn_shop", 232, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(375, by + 10), () => OpenShop(0));
-            UIKit.Badge((RectTransform)hintB.transform, "2");
-            UIKit.Badge((RectTransform)undoB.transform, "2");
-            UIKit.Badge((RectTransform)vacB.transform, "1");
+            hintB = UIKit.PowerTile(bottomBar, "tile_orange", "icon_hint", 200, new Vector2(-260, by + 40), OnHint);
+            undoB = UIKit.PowerTile(bottomBar, "tile_blue", "icon_undo", 200, new Vector2(0, by + 40), OnUndo);
+            vacB = UIKit.PowerTile(bottomBar, "tile_green", "icon_vacuum", 200, new Vector2(260, by + 40), OnVacuum);
 
             // zoom buttons (shown on big boards)
             // the board gets the free rectangle between the top bar and the bottom bar (see Board.FitCamera)
@@ -434,7 +433,7 @@ namespace SnakeJam
         void RefreshHud()
         {
             if (Save.S == null || movesTxt == null) return;
-            string c = Save.S.coins.ToString("N0");
+            string c = UIKit.Compact(Save.S.coins);
             foreach (var t in coinTexts) if (t != null) t.text = c;
             UIKit.SetPillLabel(hintB, PowerLabel(Save.HintUnlock, Save.S.hints));
             UIKit.SetPillLabel(undoB, PowerLabel(Save.UndoUnlock, Save.S.undos));

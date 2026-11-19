@@ -391,7 +391,7 @@ namespace SnakeJam
             return data.R.Cast(sv.def, k => occ.TryGetValue(k, out var v) ? v.id : -1, sv.id, liveRocks);
         }
 
-        static Color DotColor() => Save.S.theme == 3 ? new Color(0.75f, 0.8f, 1f, 0.5f) : Palette.DotLight;
+        static Color DotColor() => Save.S.theme == 4 ? new Color(0.75f, 0.8f, 1f, 0.5f) : new Color(0.62f, 0.7f, 0.82f, 0.7f);
 
         // every tap flips all traffic lights
         void ToggleLights()
