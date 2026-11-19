@@ -210,7 +210,8 @@ namespace SnakeJam
             UIKit.Skin(chip, "chip", 78, size.y * 0.5f);
             chipRt = chip.rectTransform;
             UIKit.Icon(chip.transform, icon, new Vector2(size.y * 0.82f, size.y * 0.82f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
-            var t = UIKit.Label(chip.transform, "0", 44, Color.white);
+            var t = UIKit.Label(chip.transform, "0", 42, Color.white);
+            UIKit.FitText(t, 42);
             t.rectTransform.offsetMin = new Vector2(size.y * 0.8f, 0);
             t.rectTransform.offsetMax = new Vector2(withPlus ? -(size.y * 0.95f) : -10, 0);
             bucket.Add(t);
@@ -365,7 +366,7 @@ namespace SnakeJam
             float[] xs = { -390, -130, 130, 390 };
             for (int i = 0; i < 4; i++)
             {
-                var l = UIKit.Label(bottomBar, names[i], 30, new Color(0.25f, 0.2f, 0.55f), TextAnchor.MiddleCenter, false);
+                var l = UIKit.Label(bottomBar, names[i], 30, new Color(0.9f, 0.88f, 1f), TextAnchor.MiddleCenter, true);
                 l.rectTransform.anchorMin = l.rectTransform.anchorMax = new Vector2(0.5f, 0);
                 l.rectTransform.anchoredPosition = new Vector2(xs[i], by - 26);
             }
@@ -786,7 +787,7 @@ namespace SnakeJam
         void OpenSettings()
         {
             if (settings != null && settings.dim != null) return;
-            settings = UIKit.Popup(cv, "SETTINGS", new Vector2(880, 1250));
+            settings = UIKit.Popup(cv, "SETTINGS", new Vector2(880, 1120));
             var c = settings.content;
             Button MakeToggle(string name, Func<bool> get, Action<bool> set, string icon, float y)
             {
@@ -802,12 +803,47 @@ namespace SnakeJam
                 UIKit.Pill(c, "QUIT LEVEL", "orange", new Vector2(640, 120), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -700), ShowQuitConfirm, "icon_heart", 42);
             else
                 UIKit.Pill(c, "PLAY LEVEL " + Save.S.level, "green", new Vector2(640, 120), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -700), () => { settings.Close(); StartLevel(Save.S.level); }, "icon_play", 40);
-            UIKit.Pill(c, "ADMIN LAB", "purple", new Vector2(640, 120), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -870), () => { settings.Close(); OpenLab(); }, "icon_gear", 42);
-            UIKit.Pill(c, "RESET TUTORIALS", "blue", new Vector2(640, 110), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -1030), () =>
+            // hidden admin door: tap the SETTINGS title 7 times (no sound, no shake, nothing visible), then enter the secret year
+            int titleTaps = 0;
+            var door = UIKit.Anchored(c, "TitleDoor", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 0), new Vector2(560, 150));
+            var doorImg = door.gameObject.AddComponent<Image>(); doorImg.color = new Color(0, 0, 0, 0);
+            var doorBtn = door.gameObject.AddComponent<Button>(); doorBtn.transition = Selectable.Transition.None; doorBtn.targetGraphic = doorImg;
+            doorBtn.onClick.AddListener(() => { if (++titleTaps >= 7) { titleTaps = 0; OpenAdminPin(); } });
+            UIKit.Pill(c, "RESET TUTORIALS", "blue", new Vector2(640, 110), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -870), () =>
             {
                 Save.S.tutorialDone = false; Save.S.zoomTutorialDone = false;
                 Save.S.seenBridge = Save.S.seenPortal = Save.S.seenDrill = Save.S.seenFrozen = Save.S.seenLight = false; Save.Commit(); Toast("Tutorials reset");
             }, "icon_undo", 38);
+        }
+
+        const string AdminYear = "1996";
+        void OpenAdminPin()
+        {
+            var pin = UIKit.Popup(cv, "ENTER YEAR", new Vector2(780, 1180), true, 0.75f);
+            var c = pin.content;
+            string typed = "";
+            var shown = UIKit.Label(c, "- - - -", 90, Color.white, TextAnchor.UpperCenter);
+            shown.rectTransform.offsetMin = Vector2.zero; shown.rectTransform.offsetMax = new Vector2(0, -230);
+            void Refresh() { var s = ""; for (int i = 0; i < 4; i++) s += (i < typed.Length ? typed[i].ToString() : "-") + (i < 3 ? " " : ""); shown.text = s; }
+            void Press(string d)
+            {
+                if (d == "C") typed = "";
+                else if (typed.Length < 4) typed += d;
+                Refresh();
+                if (typed.Length == 4)
+                {
+                    if (typed == AdminYear) { pin.Close(); if (settings != null) settings.Close(); OpenLab(); }
+                    else { typed = ""; Refresh(); }
+                }
+            }
+            string[] keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "" };
+            for (int i = 0; i < 12; i++)
+            {
+                if (keys[i] == "") continue;
+                string k = keys[i];
+                float x = (i % 3 - 1) * 220f, y = -440f - (i / 3) * 150f;
+                UIKit.Pill(c, k, k == "C" ? "orange" : "blue", new Vector2(190, 120), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x, y), () => Press(k), null, 56);
+            }
         }
 
         // ======================================================= admin lab (test everything without playing the levels)

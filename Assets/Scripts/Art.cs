@@ -42,7 +42,7 @@ namespace SnakeJam
         [System.Serializable] class GlyphTable { public GlyphRow[] g; }
         static TMP_SpriteAsset candySprites;
         static readonly Dictionary<char, string> candyNames = new Dictionary<char, string>();
-        public const float CandyPointSize = 185f;   // bigger number = smaller letters
+        public const float CandyPointSize = 205f;   // bigger number = smaller letters
         public static TMP_SpriteAsset CandySprites
         {
             get

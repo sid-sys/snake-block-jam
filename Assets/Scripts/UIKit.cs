@@ -87,7 +87,8 @@ namespace SnakeJam
             t.overflowMode = TextOverflowModes.Overflow;
             t.raycastTarget = false;
             // picture font: letters and digits are drawn from the candy glyph pictures
-            var sa = Art.CandySprites;
+            // small text stays in the plain font: the picture letters get mushy below ~34 px
+            var sa = (size >= 34 && !(col.r * 0.3f + col.g * 0.59f + col.b * 0.11f < 0.4f && size < 56)) ? Art.CandySprites : null;   // dark small text on cream cards stays plain and easy to read
             if (sa != null)
             {
                 t.spriteAsset = sa; t.richText = true; t.textPreprocessor = Art.CandyPreprocessor; t.text = s;
@@ -167,12 +168,21 @@ namespace SnakeJam
             if (!string.IsNullOrEmpty(label))
             {
                 var t = Label(rt, label, fontSize, Color.white);
+                FitText(t, fontSize);
                 var trt = t.rectTransform;
                 trt.offsetMin = new Vector2(iconW + size.y * 0.3f, 0);
                 trt.offsetMax = new Vector2(-size.y * 0.15f, 0);
                 if (icon == null) { trt.offsetMin = Vector2.zero; }
             }
             return b;
+        }
+
+        // text shrinks by itself when it is too long for its box (never grows past maxSize)
+        public static void FitText(TMP_Text t, float maxSize)
+        {
+            t.enableAutoSizing = true;
+            t.fontSizeMax = maxSize; t.fontSizeMin = maxSize * 0.4f;
+            t.overflowMode = TextOverflowModes.Truncate;
         }
 
         public static void SetPillLabel(Button b, string s)
