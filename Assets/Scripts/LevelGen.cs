@@ -559,6 +559,8 @@ namespace SnakeJam
                     if (!placed) fails++;
                 }
                 // gap fill: try every free cell in every direction, emptiest places first, with shorter snakes too.
+                void GapFill(int minL)
+                {
                 for (int pass = 0; pass < 8 && d.snakes.Count < p.cap && occ.Count < total * Mathf.Min(1f, p.fill + 0.12f); pass++)
                 {
                     var cand = new List<(Vector2Int c, int far)>();
@@ -585,10 +587,10 @@ namespace SnakeJam
                         bool ok = false;
                         foreach (var dir in Dirs)
                         {
-                            for (int len = p.maxLen; len >= p.minLen && !ok; len -= Mathf.Max(1, (p.maxLen - p.minLen) / 3))
+                            for (int len = p.maxLen; len >= minL && !ok; len -= Mathf.Max(1, (p.maxLen - minL) / 3))
                             {
-                                var cells = Walk(cd.c, dir, Mathf.Max(p.minLen, len));
-                                if (cells != null && cells.Count >= p.minLen && TryPlace(cells)) ok = true;
+                                var cells = Walk(cd.c, dir, Mathf.Max(minL, len));
+                                if (cells != null && cells.Count >= minL && TryPlace(cells)) ok = true;
                             }
                             if (ok) break;
                         }
@@ -598,6 +600,12 @@ namespace SnakeJam
                 }
                 // last step: grow snake tails into the free cells that are left, so the board is full like the reference levels.
                 // (only on levels without a snake cap: the first levels keep a few short snakes on purpose)
+                }
+                GapFill(p.minLen);
+                Extend();
+                GapFill(Mathf.Max(4, p.minLen - 2));
+                Extend();
+                GapFill(4);
                 Extend();
             }
 
@@ -656,7 +664,7 @@ namespace SnakeJam
                     for (int i = 0; i < d.snakes.Count; i++)
                     {
                         var cells = d.snakes[i].cells;
-                        if (cells.Count >= p.maxLen + 2) continue;
+                        if (cells.Count >= p.maxLen * 2) continue;
                         var tail = cells[cells.Count - 1];
                         var order = new List<Vector2Int>(Dirs);
                         for (int a = order.Count - 1; a > 0; a--) { int b = rng.Next(a + 1); var t = order[a]; order[a] = order[b]; order[b] = t; }
@@ -1051,7 +1059,7 @@ namespace SnakeJam
                 {
                     // boss 1 mega grid, 2 roads, 3 roads + lights, 4 portals + lights + roads, 5 everything
                     int k = level / 10;
-                    var bp = new GenParams { minLen = 3, maxLen = 8, turn = 0.4f, fill = 0.93f, require = true };
+                    var bp = new GenParams { minLen = 6, maxLen = 14, turn = 0.4f, fill = 0.98f, require = true };
                     string bshape = "Square"; int bn = 10 + k;
                     if (k >= 2) { bp.roads = k >= 4 ? 3 : 2; }
                     if (k >= 3) bp.lights = k >= 5 ? 3 : 2;
@@ -1083,18 +1091,18 @@ namespace SnakeJam
             }
             else if (level <= 30)
             {
-                string[] pool = { "Square", "Diamond", "Triangle", "Cross", "Wide" };
-                shape = pool[rng.Next(pool.Length)]; n = 7 + (level - 10) / 5;
+                string[] pool = { "Square", "Circle", "Diamond", "Triangle", "Cross", "Heart", "Flower" };
+                shape = pool[rng.Next(pool.Length)]; n = 8 + (level - 10) / 3;
             }
             else if (level <= 70)
             {
-                string[] pool = { "Circle", "Star", "Heart", "Ring", "Diamond", "Cross" };
-                shape = pool[rng.Next(pool.Length)]; n = 9 + (level - 30) / 8;
+                string[] pool = { "Circle", "Star", "Heart", "Ring", "Flower", "Elephant", "Cross", "Diamond" };
+                shape = pool[rng.Next(pool.Length)]; n = 14 + (level - 30) / 5;
             }
             else
             {
                 string[] pool = { "Star", "Heart", "Circle", "Ring", "Elephant", "Cross", "Elephant" };
-                shape = pool[rng.Next(pool.Length)]; n = 11 + Mathf.Min(3, (level - 70) / 25);
+                shape = pool[rng.Next(pool.Length)]; n = 20 + Mathf.Min(6, (level - 70) / 10);
             }
             if (breather) { shape = "Square"; n = Mathf.Max(4, n - 3); }
 
@@ -1198,53 +1206,39 @@ namespace SnakeJam
                     d.snakes.Add(S("6,3 6,4", 3));
                     break;
                 case "portal":
-                    d = Hand(7, 5, "Portal test");
-                    d.portals[new Vector2Int(2, 2)] = new Vector2Int(5, 4);
-                    d.portals[new Vector2Int(5, 4)] = new Vector2Int(2, 2);
-                    d.portalFirst.Add(new Vector2Int(2, 2));
-                    d.snakes.Add(S("1,2 0,2", 0));
-                    d.snakes.Add(S("4,4 3,4", 1));
-                    d.snakes.Add(S("6,4 6,3 6,2", 2));
-                    d.snakes.Add(S("3,0 2,0 1,0", 3));
-                    break;
+                    d = Generate("Circle", 9, 1111 + seed, new GenParams { minLen = 5, maxLen = 9, turn = 0.3f, fill = 0.95f, portalPairs = 2, require = true }, 0);
+                    d.title = "Portal test"; break;
                 case "drill":
-                    d = Hand(8, 5, "Drill test");
-                    d.rocks.Add(new Vector2Int(4, 2));
-                    d.walls.Add(new Vector2Int(6, 1));
-                    d.snakes.Add(S("1,2 0,2", 0, true));
-                    d.snakes.Add(S("5,0 4,0 3,0", 1));
-                    d.snakes.Add(S("2,4 1,4", 2));
-                    break;
+                    d = Generate("Square", 8, 2222 + seed, new GenParams { minLen = 5, maxLen = 9, turn = 0.3f, fill = 0.95f, drills = 2, require = true }, 0);
+                    d.title = "Drill test"; break;
                 case "frozen":
                     {
-                        var p = new GenParams { minLen = 3, maxLen = 6, turn = 0.3f, fill = 0.9f, frozen = 2 };
-                        d = Generate("Square", 8, 4242, p, 0);
+                        d = Generate("Circle", 9, 4242 + seed, new GenParams { minLen = 5, maxLen = 9, turn = 0.3f, fill = 0.95f, frozen = 2, require = true }, 0);
                         d.title = "Frozen test";
-                        // frozen snakes need a few other snakes to escape first
                         if (!d.HasFrozen && d.snakes.Count > 3) d.snakes[0].thaw = 2;
                         break;
                     }
                 case "square":
-                    d = Generate("Square", 12, 100 + seed, new GenParams { minLen = 6, maxLen = 16, turn = 0.55f, fill = 0.92f }, 0);
+                    d = Generate("Square", 12, 100 + seed, new GenParams { minLen = 6, maxLen = 16, turn = 0.55f, fill = 0.98f }, 0);
                     d.title = "Square"; break;
                 case "flower":
                     {
                         var walls = new List<Vector2Int> { new Vector2Int(8, 8), new Vector2Int(9, 8), new Vector2Int(8, 9), new Vector2Int(9, 9) };
-                        d = Generate("Flower", 18, 200 + seed, new GenParams { minLen = 5, maxLen = 16, turn = 0.35f, fill = 0.92f }, 0, walls);
+                        d = Generate("Flower", 18, 200 + seed, new GenParams { minLen = 7, maxLen = 16, turn = 0.35f, fill = 0.98f }, 0, walls);
                         d.title = "Flower"; break;
                     }
                 case "road":
                     {
                         var top = new List<Vector2Int> { new Vector2Int(1, 9), new Vector2Int(1, 13), new Vector2Int(4, 13), new Vector2Int(4, 10), new Vector2Int(7, 10), new Vector2Int(7, 13), new Vector2Int(10, 13), new Vector2Int(10, 10), new Vector2Int(13, 10), new Vector2Int(13, 13) };
                         var low = new List<Vector2Int> { new Vector2Int(1, 6), new Vector2Int(1, 3), new Vector2Int(4, 3), new Vector2Int(4, 5), new Vector2Int(7, 5), new Vector2Int(7, 3), new Vector2Int(10, 3), new Vector2Int(10, 5), new Vector2Int(13, 5), new Vector2Int(13, 3) };
-                        d = Generate("Road", 20, 300 + seed, new GenParams { minLen = 5, maxLen = 16, turn = 0.14f, fill = 0.9f, roadPaths = new List<List<Vector2Int>> { top, low } }, 0);
+                        d = Generate("Road", 20, 300 + seed, new GenParams { minLen = 7, maxLen = 16, turn = 0.14f, fill = 0.98f, roadPaths = new List<List<Vector2Int>> { top, low } }, 0);
                         d.title = "Zigzag road"; break;
                     }
                 case "castle":
                     d = Generate("Castle", 27, 400 + seed, new GenParams { minLen = 10, maxLen = 46, turn = 0.1f, fill = 0.88f }, 0);
                     d.title = "Castle"; break;
                 case "elephant":
-                    d = Generate("ElephantBig", 46, 450 + seed, new GenParams { minLen = 5, maxLen = 34, turn = 0.42f, fill = 0.95f }, 0);
+                    d = Generate("ElephantBig", 46, 450 + seed, new GenParams { minLen = 8, maxLen = 34, turn = 0.42f, fill = 0.98f }, 0);
                     d.title = "Elephant";
                     foreach (var sn in d.snakes)
                     {
@@ -1254,17 +1248,12 @@ namespace SnakeJam
                     }
                     break;
                 case "pieces":
-                    d = Generate("Square", 44, 800 + seed, new GenParams { minLen = 4, maxLen = 14, turn = 0.3f, fill = 0.9f,
+                    d = Generate("Square", 44, 800 + seed, new GenParams { minLen = 7, maxLen = 14, turn = 0.3f, fill = 0.98f,
                         pieceKeys = new[] { "rp_h1:0", "rp_h2:0", "rp_h3:0", "rp_h1:1", "rp_h2:1", "rp_h3:1", "rp_l:0", "rp_lr:0", "rp_u:0", "rp_s:0", "rp_z:0", "rp_c:0", "rp_m:0", "rp_w:0" } }, 0);
                     d.title = "Road pieces"; d.giant = true; break;
                 case "light":
-                    d = Hand(7, 5, "Light test");
-                    d.lights.Add(new Vector2Int(3, 2)); d.lightsRed.Add(new Vector2Int(3, 2));
-                    d.snakes.Add(S("1,2 0,2", 0));      // runs through the light
-                    d.snakes.Add(S("3,1 3,0", 3));      // also runs through the light
-                    d.snakes.Add(S("5,0 4,0", 1));
-                    d.snakes.Add(S("5,4 4,4", 2));
-                    break;
+                    d = Generate("Diamond", 9, 3333 + seed, new GenParams { minLen = 5, maxLen = 9, turn = 0.3f, fill = 0.95f, lights = 2, require = true }, 0);
+                    d.title = "Light test"; break;
                 case "giant":
                     d = Generate("Square", 40, 700 + seed, new GenParams { minLen = 6, maxLen = 30, turn = 0.3f, fill = 0.93f, portalPairs = 3, roads = 4, lights = 4, drills = 3 }, 0);
                     d.title = "Giant map"; d.giant = true; break;
@@ -1272,10 +1261,10 @@ namespace SnakeJam
                     d = Generate("Square", 14, 500 + seed, new GenParams { minLen = 14, maxLen = 40, turn = 0.08f, fill = 0.9f }, 0);
                     d.title = "Long snakes"; break;
                 default:
-                    d = Generate("Diamond", 14, 600 + seed, new GenParams { minLen = 4, maxLen = 12, turn = 0.35f, fill = 0.9f, portalPairs = 1, drills = 2, frozen = 2, roads = 2 }, 90);
+                    d = Generate("Diamond", 14, 600 + seed, new GenParams { minLen = 6, maxLen = 14, turn = 0.35f, fill = 0.98f, portalPairs = 1, drills = 2, frozen = 2, roads = 2 }, 90);
                     d.title = "All mechanics"; break;
             }
-            for (int i = 0; i < d.snakes.Count; i++) if (key == "bridge" || key == "portal" || key == "drill" || key == "light" || key == "elephant") { } else d.snakes[i].colorIdx = Pick(i, 1);
+            for (int i = 0; i < d.snakes.Count; i++) if (key == "bridge" || key == "elephant") { } else d.snakes[i].colorIdx = Pick(i, 1);
             SetMoves(d, false, true);
             if (d.moves < 20) d.moves = 20;
             return d;

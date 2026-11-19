@@ -212,6 +212,7 @@ namespace SnakeJam
             UIKit.Icon(chip.transform, icon, new Vector2(size.y * 0.82f, size.y * 0.82f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             var t = UIKit.Label(chip.transform, "0", 42, Color.white);
             UIKit.FitText(t, 42);
+            UIKit.PlainText(t);   // same bold plain text as "Moves: 19" and "Level 25"
             t.rectTransform.offsetMin = new Vector2(size.y * 0.8f, 0);
             t.rectTransform.offsetMax = new Vector2(withPlus ? -(size.y * 0.95f) : -10, 0);
             bucket.Add(t);
@@ -362,14 +363,14 @@ namespace SnakeJam
 
             float by = 70 + bottom;
             // the words HINT / UNDO / VACUUM / SHOP are part of the button pictures; a small badge shows the count (or "Lv N" until unlocked)
-            hintB = UIKit.PowerTile(bottomBar, "tile_orange", "icon_hint", 200, new Vector2(-260, by + 40), OnHint);
-            undoB = UIKit.PowerTile(bottomBar, "tile_blue", "icon_undo", 200, new Vector2(0, by + 40), OnUndo);
-            vacB = UIKit.PowerTile(bottomBar, "tile_green", "icon_vacuum", 200, new Vector2(260, by + 40), OnVacuum);
+            hintB = UIKit.PowerTile(bottomBar, "tile_orange", "icon_hint", 180, new Vector2(-250, by + 36), OnHint);
+            undoB = UIKit.PowerTile(bottomBar, "tile_blue", "icon_undo", 180, new Vector2(0, by + 36), OnUndo);
+            vacB = UIKit.PowerTile(bottomBar, "tile_green", "icon_vacuum", 180, new Vector2(250, by + 36), OnVacuum);
 
             // zoom buttons (shown on big boards)
             // the board gets the free rectangle between the top bar and the bottom bar (see Board.FitCamera)
             board.resTop = 190f + top;
-            board.resBot = 230f + bottom;
+            board.resBot = 310f + bottom;   // power-up tiles (180 tall) + count badges sit below this line
             // zoom buttons: one row just above the bottom bar (only on giant maps, the board keeps that row free)
             zoomBtns = UIKit.Anchored(hudRoot, "ZoomBtns", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, board.resBot + 10f), new Vector2(420, 110));
             UIKit.Pill(zoomBtns, "+", "blue", new Vector2(120, 100), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-140, 0), () => board.ZoomBy(1.4f), null, 60);

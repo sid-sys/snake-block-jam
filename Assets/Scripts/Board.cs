@@ -241,13 +241,14 @@ namespace SnakeJam
             {
                 baseOrtho = Hc / (2f * MinCell);
                 minZoom = baseOrtho / full;
+                zoom = minZoom; pan = Vector2.zero;   // big maps always start fully zoomed out
             }
             else { baseOrtho = full; minZoom = 1f; }
             shiftCanvas = (bot - resTop) * 0.5f;   // how far (canvas units) the board centre sits above the screen centre
             ApplyCamera();
         }
 
-        const float MinCell = 70f;   // smallest cell (canvas units, 1080 wide) at the start of a level: about 47 px on a 720 px wide phone
+        const float MinCell = 50f;   // smallest cell (canvas units, 1080 wide) at the start of a level: about 47 px on a 720 px wide phone
 
         // set by the HUD: canvas units kept free at the top, at the bottom, and for the zoom row on giant maps
         public float resTop = 200f, resBot = 240f, resZoomRow = 130f;
@@ -529,7 +530,12 @@ namespace SnakeJam
                 AfterRemove();
             });
 
-            if (combo >= 2 && combo % 2 == 0)
+            Fx.Burst(sv.HeadPos, Color.Lerp(col, Color.white, 0.3f), 12, 1.0f, 0.45f, 0.16f);   // colour splash when the snake sets off
+            // praise words by progress, like the reference game: half the snakes gone, then the last few
+            int left = active.Count;
+            if (Total >= 8 && (left == Total / 2 || left == 3 || left == 1))
+                OnPraise?.Invoke(left == Total / 2 ? "Great!" : (left == 3 ? "Amazing!" : "Awesome!"));
+            else if (combo >= 2 && combo % 2 == 0)
             {
                 string[] w = combo >= 6 ? new[] { "Awesome!", "Perfect!" } : (combo >= 4 ? new[] { "Amazing!" } : new[] { "Great!" });
                 OnPraise?.Invoke(w[UnityEngine.Random.Range(0, w.Length)]);
