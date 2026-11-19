@@ -87,7 +87,8 @@ namespace SnakeJam
             t.overflowMode = TextOverflowModes.Overflow;
             t.richText = false;
             t.raycastTarget = false;
-            if (shadow) t.fontSharedMaterial = Art.TmpShadowMaterial;
+            // every light text gets the same candy look as the buttons: dark purple-blue outline + soft drop shadow
+            if (shadow) t.fontSharedMaterial = Art.TmpOutlineMaterial;
             return t;
         }
 
@@ -117,6 +118,16 @@ namespace SnakeJam
             im.sprite = Art.Round; im.type = Image.Type.Sliced; im.color = col;
             im.pixelsPerUnitMultiplier = 0.9f;
             im.raycastTarget = false;
+            return im;
+        }
+
+        // give a panel the glossy candy look of a generated sprite. borderPx = 9-slice border in the sprite (sprite is 256 px per unit), cornerUi = corner size on screen
+        public static Image Skin(Image im, string sprite, float borderPx, float cornerUi)
+        {
+            var sp = Art.Get(sprite);
+            if (sp == null) return im;
+            im.sprite = sp; im.type = Image.Type.Sliced; im.color = Color.white;
+            im.pixelsPerUnitMultiplier = (borderPx * 100f / 256f) / cornerUi;
             return im;
         }
 
@@ -192,6 +203,7 @@ namespace SnakeJam
             di.color = new Color(0.05f, 0.03f, 0.15f, 0f);
             di.DOFade(dimAlpha, 0.2f);
             var card = Panel(dim, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, size, noCard ? Color.clear : Card, "Card");
+            if (!noCard) Skin(card, "card", 110, 70);
             card.transform.localScale = Vector3.one * 0.7f;
             card.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack);
             var content = Stretch(card.transform, "Content");

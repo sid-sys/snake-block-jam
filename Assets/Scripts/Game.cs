@@ -207,6 +207,7 @@ namespace SnakeJam
         void BuildChip(Transform parent, string icon, Vector2 pos, Vector2 size, bool withPlus, List<TMP_Text> bucket, out RectTransform chipRt)
         {
             var chip = UIKit.Panel(parent, new Vector2(0, 1), new Vector2(0, 1), pos, size, UIKit.Chip, "Chip_" + icon);
+            UIKit.Skin(chip, "chip", 78, size.y * 0.5f);
             chipRt = chip.rectTransform;
             UIKit.Icon(chip.transform, icon, new Vector2(size.y * 0.82f, size.y * 0.82f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             var t = UIKit.Label(chip.transform, "0", 44, Color.white);
@@ -239,6 +240,7 @@ namespace SnakeJam
             BuildChip(mapRoot, "icon_coin", new Vector2(213, -(40 + top)), new Vector2(330, 90), true, coinTexts, out mapCoinChip);
 
             var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(618, -(40 + top)), new Vector2(260, 90), UIKit.Chip, "LivesChip");
+            UIKit.Skin(lc, "chip", 78, 45);
             UIKit.Icon(lc.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             livesTxt = UIKit.Label(lc.transform, "5", 44, Color.white);
             livesTxt.rectTransform.offsetMin = new Vector2(70, 0); livesTxt.rectTransform.offsetMax = new Vector2(-90, 0);
@@ -291,6 +293,8 @@ namespace SnakeJam
                 Color col = i == 0 ? (hard ? new Color(0.9f, 0.27f, 0.24f) : new Color(0.2f, 0.82f, 0.4f))
                                    : (hard ? new Color(0.72f, 0.25f, 0.3f) : new Color(0.55f, 0.58f, 0.68f));
                 var node = UIKit.Panel(nodesRoot, new Vector2(0.5f, 0), new Vector2(0.5f, 0.5f), new Vector2(0, firstY + i * step), new Vector2(180, 180), col, "Node" + lvl);
+                var nsp = Art.Get(hard ? "node_red" : (i == 0 ? "node_green" : "node_gray"));
+                if (nsp != null) { node.sprite = nsp; node.type = Image.Type.Simple; node.preserveAspect = true; node.color = i == 0 || !hard ? Color.white : new Color(1f, 0.8f, 0.8f); }
                 var num = UIKit.Label(node.transform, lvl.ToString(), 90, Color.white);
                 if (hard)
                 {
@@ -331,13 +335,16 @@ namespace SnakeJam
             // top row, four items with equal gaps: coins | moves + level | lives | settings
             BuildChip(topBar, "icon_coin", new Vector2(30, -(40 + top)), new Vector2(260, 90), true, coinTexts, out hudCoinChip);
 
-            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(343, -(34 + top)), new Vector2(300, 120), new Color(0.18f, 0.78f, 0.55f), "MovesBox");
+            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(343, -(34 + top)), new Vector2(300, 120), Color.white, "MovesBox");
+            UIKit.Skin(movesBox, "pill_green", 70, 60);
             movesTxt = UIKit.Label(movesBox.transform, "Moves: 0", 46, Color.white);
-            movesTxt.rectTransform.offsetMin = new Vector2(0, 28);
-            levelLblTxt = UIKit.Label(movesBox.transform, "Level 1", 28, Color.white);
-            levelLblTxt.rectTransform.offsetMax = new Vector2(0, -78);
+            movesTxt.rectTransform.offsetMin = new Vector2(0, 36);
+            levelLblTxt = UIKit.Label(movesBox.transform, "Level 1", 26, Color.white);
+            levelLblTxt.rectTransform.offsetMin = new Vector2(0, 14);
+            levelLblTxt.rectTransform.offsetMax = new Vector2(0, -76);
 
             var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(696, -(40 + top)), new Vector2(190, 90), UIKit.Chip, "LivesChip");
+            UIKit.Skin(hl, "chip", 78, 45);
             UIKit.Icon(hl.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0));
             hudLivesTxt = UIKit.Label(hl.transform, Save.S.lives.ToString(), 46, Color.white);
             hudLivesTxt.rectTransform.offsetMin = new Vector2(70, 0);
@@ -400,7 +407,7 @@ namespace SnakeJam
             board.SetVisible(true);
             board.Load(data);
             ApplyTheme();
-            movesBox.color = data.hard ? new Color(0.9f, 0.27f, 0.24f) : new Color(0.18f, 0.78f, 0.55f);
+            UIKit.Skin(movesBox, data.hard ? "pill_red" : "pill_green", 70, 60);
             string title = data.level > 0 ? "Level " + data.level + (data.hard ? "  HARD" : "") : data.title;
             levelLblTxt.text = title;
             RefreshHud();
@@ -1028,9 +1035,9 @@ namespace SnakeJam
                     today ? new Color(0.6f, 0.9f, 0.55f) : (done ? new Color(0.78f, 0.78f, 0.82f) : new Color(0.95f, 0.91f, 0.82f)), "Gift" + i);
                 var d = UIKit.Label(tile.transform, "DAY " + (i + 1), 26, UIKit.Ink, TextAnchor.UpperCenter, false);
                 d.rectTransform.offsetMax = new Vector2(0, -12);
-                var ic = UIKit.Icon(tile.transform, GiftIcons[i], new Vector2(110, 110), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(big ? -90 : 0, 6));
+                var ic = UIKit.Icon(tile.transform, GiftIcons[i], new Vector2(110, 110), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(big ? -310 : 0, big ? -8 : 6));
                 var lb = UIKit.Label(tile.transform, done ? "DONE" : GiftLabels[i], i == 2 || i == 6 ? (big ? 36 : 28) : 34, UIKit.Ink, big ? TextAnchor.MiddleCenter : TextAnchor.LowerCenter, false);
-                if (big) lb.rectTransform.offsetMin = new Vector2(120, 0); else lb.rectTransform.offsetMax = new Vector2(0, 0);
+                if (big) { lb.rectTransform.offsetMin = new Vector2(210, 0); lb.rectTransform.offsetMax = new Vector2(-20, -20); } else lb.rectTransform.offsetMax = new Vector2(0, 0);
                 if (done) ic.color = new Color(1, 1, 1, 0.45f);
             }
             var claim = UIKit.Pill(c, can ? (Save.S.giftDay == 2 || Save.S.giftDay == 6 ? "CLAIM" : "CHECK IN") : "COME BACK TOMORROW", can ? "green" : "blue", new Vector2(640, 130), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), () =>

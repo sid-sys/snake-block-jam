@@ -37,6 +37,24 @@ namespace SnakeJam
                 return tmpFont;
             }
         }
+        static Material tmpOutline;
+        // same font with a dark outline and a drop shadow: the one text style of the whole game
+        public static Material TmpOutlineMaterial
+        {
+            get
+            {
+                if (tmpOutline == null)
+                {
+                    tmpOutline = new Material(TmpShadowMaterial) { name = "Lato Heavy SDF Outline" };
+                    tmpOutline.EnableKeyword(ShaderUtilities.Keyword_Outline);
+                    tmpOutline.SetColor(ShaderUtilities.ID_OutlineColor, new Color(0.17f, 0.1f, 0.42f, 1f));
+                    tmpOutline.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.2f);
+                    tmpOutline.SetFloat(ShaderUtilities.ID_OutlineSoftness, 0.05f);
+                    tmpOutline.SetColor(ShaderUtilities.ID_UnderlayColor, new Color(0.05f, 0.02f, 0.2f, 0.5f));
+                }
+                return tmpOutline;
+            }
+        }
         // same font with a soft drop shadow (underlay) shared by all labels
         public static Material TmpShadowMaterial
         {

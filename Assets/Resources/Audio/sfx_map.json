@@ -83,12 +83,12 @@
         },
         {
             "ev": "complete",
-            "file": "Candy__Fanfares21",
-            "cat": "Candy",
-            "sub": "Fanfares",
-            "orig": "Fanfares21.wav",
+            "file": "User__GameWin",
+            "cat": "User",
+            "sub": "Win",
+            "orig": "game win.wav",
             "where": "Level complete popup",
-            "dur": 2.5199999809265137
+            "dur": 3.08
         },
         {
             "ev": "pop",

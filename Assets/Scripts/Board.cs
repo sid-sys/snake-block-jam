@@ -619,7 +619,8 @@ namespace SnakeJam
             if (occ.Count == 0 && !won)
             {
                 won = true;
-                DOVirtual.DelayedCall(0.25f, () => { Sfx.Play("win"); FeelFx.Win(); OnWin?.Invoke(); });
+                DOVirtual.DelayedCall(0.25f, () => { FeelFx.Haptic("win"); FeelFx.Win();      // the win sound itself plays on the COMPLETE popup (game win.wav)
+ OnWin?.Invoke(); });
             }
         }
 
