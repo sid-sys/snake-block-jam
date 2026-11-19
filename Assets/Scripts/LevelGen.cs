@@ -1170,8 +1170,8 @@ namespace SnakeJam
         }
 
         // ---------------------------------------------------------------- test / showcase levels
-        public static readonly string[] SpecialKeys = { "portal", "drill", "frozen", "light", "square", "flower", "road", "pieces", "castle", "elephant", "giant", "long", "all" };
-        public static readonly string[] SpecialTitles = { "Portal test", "Drill test", "Frozen test", "Light test", "Square", "Flower", "Zigzag road", "Road pieces", "Castle", "Elephant", "Giant map", "Long snakes", "All mechanics" };
+        public static readonly string[] SpecialKeys = { "portal", "drill", "frozen", "light", "square", "flower", "road", "pieces", "castle", "elephant", "giant", "long", "all", "spirals", "heart" };
+        public static readonly string[] SpecialTitles = { "Portal test", "Drill test", "Frozen test", "Light test", "Square", "Clover", "Zigzag road", "Road pieces", "Castle", "Elephant", "Giant map", "Long snakes", "All mechanics", "Tap to escape", "Heart road" };
 
         static SnakeDef S(string coords, int color, bool drill = false)
         {
@@ -1234,6 +1234,42 @@ namespace SnakeJam
                         d = Generate("Road", 20, 300 + seed, new GenParams { minLen = 7, maxLen = 16, turn = 0.14f, fill = 0.98f, roadPaths = new List<List<Vector2Int>> { top, low } }, 0);
                         d.title = "Zigzag road"; break;
                     }
+                case "spirals":
+                    {
+                        // 4 x 5 blocks of 3 x 3, one spiral snake in each block, every snake leaves toward the nearest edge
+                        d = Hand(12, 15, "Tap to escape");
+                        for (int by = 0; by < 5; by++)
+                            for (int bx = 0; bx < 4; bx++)
+                            {
+                                int rot = by == 4 ? 3 : (by == 0 ? 1 : (bx < 2 ? 0 : 2));   // 0 left, 1 down, 2 right, 3 up
+                                string[] tpl = { "0,1", "1,1", "1,0", "2,0", "2,1", "2,2", "1,2", "0,2" };
+                                var sd = new SnakeDef { colorIdx = (bx * 2 + by) % 5 };
+                                foreach (var t in tpl)
+                                {
+                                    var xy = t.Split(',');
+                                    int ox = int.Parse(xy[0]) - 1, oy = int.Parse(xy[1]) - 1;
+                                    for (int r = 0; r < rot; r++) { int nx = -oy, ny = ox; ox = nx; oy = ny; }
+                                    sd.cells.Add(new Vector2Int(bx * 3 + 1 + ox, by * 3 + 1 + oy));
+                                }
+                                d.snakes.Add(sd);
+                            }
+                        break;
+                    }
+                case "heart":
+                    {
+                        var loop = new List<Vector2Int>();
+                        int[,] pts = { { 11, 3 }, { 9, 3 }, { 9, 5 }, { 7, 5 }, { 7, 7 }, { 5, 7 }, { 5, 11 }, { 7, 11 }, { 7, 13 }, { 10, 13 }, { 10, 11 }, { 12, 11 }, { 12, 13 }, { 15, 13 }, { 15, 11 }, { 17, 11 }, { 17, 7 }, { 15, 7 }, { 15, 5 }, { 13, 5 }, { 13, 3 }, { 11, 3 } };
+                        for (int i = 0; i < pts.GetLength(0); i++) loop.Add(new Vector2Int(pts[i, 0], pts[i, 1]));
+                        d = Generate("Road", 22, 5500 + seed, new GenParams { minLen = 6, maxLen = 14, turn = 0.2f, fill = 0.98f, roadPaths = new List<List<Vector2Int>> { loop } }, 0);
+                        // the road is the picture of the level: put it back even if no snake rides on it
+                        for (int i = 0; i + 1 < loop.Count; i++)
+                        {
+                            var a = loop[i]; var b = loop[i + 1];
+                            var st = new Vector2Int(Math.Sign(b.x - a.x), Math.Sign(b.y - a.y));
+                            for (var c = a; ; c += st) { if (MaskAt(d, c)) d.roads.Add(c); if (c == b) break; }
+                        }
+                        d.title = "Heart road"; break;
+                    }
                 case "castle":
                     d = Generate("Castle", 27, 400 + seed, new GenParams { minLen = 10, maxLen = 46, turn = 0.1f, fill = 0.88f }, 0);
                     d.title = "Castle"; break;
@@ -1264,7 +1300,18 @@ namespace SnakeJam
                     d = Generate("Diamond", 14, 600 + seed, new GenParams { minLen = 6, maxLen = 14, turn = 0.35f, fill = 0.98f, portalPairs = 1, drills = 2, frozen = 2, roads = 2 }, 90);
                     d.title = "All mechanics"; break;
             }
-            for (int i = 0; i < d.snakes.Count; i++) if (key == "bridge" || key == "elephant") { } else d.snakes[i].colorIdx = Pick(i, 1);
+            for (int i = 0; i < d.snakes.Count; i++) if (key == "bridge" || key == "elephant" || key == "spirals") { } else d.snakes[i].colorIdx = Pick(i, 1);
+            if (key == "flower")
+            {
+                // clover look: snakes that touch the edge of the shape are green, the ones inside are yellow
+                foreach (var sn in d.snakes)
+                {
+                    bool edge = false;
+                    foreach (var c in sn.cells)
+                        foreach (var dd in Dirs) { var n = c + dd; if (n.x < 0 || n.y < 0 || n.x >= d.w || n.y >= d.h || !d.mask[n.x, n.y]) edge = true; }
+                    sn.colorIdx = edge ? 2 : 3;
+                }
+            }
             SetMoves(d, false, true);
             if (d.moves < 20) d.moves = 20;
             return d;

@@ -29,7 +29,8 @@ namespace SnakeJam
         readonly List<TMP_Text> coinTexts = new List<TMP_Text>();
         RectTransform hudCoinChip, mapCoinChip;
         TMP_Text hudLivesTxt, livesTxt, timerTxt, movesTxt, levelLblTxt, banner, loadingTxt;
-        Image movesBox, loadFill, hand, edgeFlash;
+        Image movesBox, loadFill, hand, edgeFlash, movesSkull, tutCard;
+        TMP_Text tutTxt;
         RectTransform topBar, bottomBar, zoomBtns;
         CanvasGroup mapGroup, hudGroup;
         TMP_Text levelBannerTxt;
@@ -242,9 +243,9 @@ namespace SnakeJam
 
             // top row: avatar | coins | lives | settings, equal gaps of about 74
             UIKit.Icon(mapRoot, "avatar", new Vector2(110, 110), new Vector2(0, 1), new Vector2(0, 1), new Vector2(28, -(30 + top)));
-            BuildChip(mapRoot, "icon_coin", new Vector2(158, -(40 + top)), new Vector2(340, 90), true, coinTexts, out mapCoinChip);
+            BuildChip(mapRoot, "icon_coin", new Vector2(158, -(40 + top)), new Vector2(380, 90), false, coinTexts, out mapCoinChip);
 
-            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(660, -(40 + top)), new Vector2(250, 90), UIKit.Chip, "LivesChip");
+            var lc = UIKit.Panel(mapRoot, new Vector2(0, 1), new Vector2(0, 1), new Vector2(620, -(40 + top)), new Vector2(260, 90), UIKit.Chip, "LivesChip");
             UIKit.Skin(lc, "chip", 78, 45);
             UIKit.Icon(lc.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0));
             livesTxt = UIKit.Label(lc.transform, "5", 44, Color.white);
@@ -275,7 +276,7 @@ namespace SnakeJam
             mapGroup.alpha = 0f; mapGroup.DOFade(1f, 0.35f);
             board.SetVisible(false);
             board.inputLocked = true;
-            HideHand();
+            HideHand(); HideTut();
             Save.TickLives();
             RefreshHud();
             BuildNodes();
@@ -340,9 +341,9 @@ namespace SnakeJam
             float top = SafeTop(), bottom = SafeBottom();
 
             // top row, four items with equal gaps: coins | moves + level | lives | settings
-            BuildChip(topBar, "icon_coin", new Vector2(24, -(40 + top)), new Vector2(290, 90), true, coinTexts, out hudCoinChip);
+            BuildChip(topBar, "icon_coin", new Vector2(24, -(40 + top)), new Vector2(300, 90), false, coinTexts, out hudCoinChip);
 
-            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(425, -(34 + top)), new Vector2(270, 120), Color.white, "MovesBox");
+            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(350, -(34 + top)), new Vector2(290, 120), Color.white, "MovesBox");
             UIKit.Skin(movesBox, "pill_green", 70, 60);
             movesTxt = UIKit.Label(movesBox.transform, "Moves: 0", 46, Color.white);
             movesTxt.rectTransform.offsetMin = new Vector2(0, 36);
@@ -350,8 +351,17 @@ namespace SnakeJam
             levelLblTxt.rectTransform.offsetMin = new Vector2(0, 14);
             levelLblTxt.rectTransform.offsetMax = new Vector2(0, -76);
             UIKit.PlainText(movesTxt); UIKit.PlainText(levelLblTxt); UIKit.FitText(movesTxt, 46);
+            movesSkull = UIKit.Icon(movesBox.transform, "icon_gear", new Vector2(76, 76), new Vector2(0, 1), new Vector2(0.5f, 0.5f), new Vector2(14, -6));
+            movesSkull.sprite = Art.Skull; movesSkull.gameObject.SetActive(false);
+            // tutorial text card (under the top bar)
+            tutCard = UIKit.Panel(hudRoot, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -(185 + top)), new Vector2(900, 150), new Color(0.12f, 0.1f, 0.4f, 1f), "TutCard");
+            tutTxt = UIKit.Label(tutCard.transform, "", 34, Color.white);
+            UIKit.FitText(tutTxt, 34); UIKit.PlainText(tutTxt);
+            tutTxt.textWrappingMode = TMPro.TextWrappingModes.Normal;
+            tutTxt.rectTransform.offsetMin = new Vector2(24, 8); tutTxt.rectTransform.offsetMax = new Vector2(-24, -8);
+            tutCard.gameObject.SetActive(false);
 
-            var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(715, -(40 + top)), new Vector2(180, 90), UIKit.Chip, "LivesChip");
+            var hl = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(668, -(40 + top)), new Vector2(200, 90), UIKit.Chip, "LivesChip");
             UIKit.Skin(hl, "chip", 78, 45);
             UIKit.Icon(hl.transform, "icon_heart", new Vector2(72, 72), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(14, 0));
             hudLivesTxt = UIKit.Label(hl.transform, Save.S.lives.ToString(), 46, Color.white);
@@ -407,8 +417,11 @@ namespace SnakeJam
             board.SetVisible(true);
             board.Load(data);
             ApplyTheme();
-            UIKit.Skin(movesBox, data.hard ? "pill_red" : "pill_green", 70, 60);
-            string title = data.level > 0 ? "Level " + data.level + (data.hard ? "  HARD" : "") : data.title;
+            UIKit.Skin(movesBox, data.hard ? "pill_purple" : "pill_green", 70, 60);
+            if (movesSkull != null) movesSkull.gameObject.SetActive(data.hard);
+            HideTut();
+            if (data.hard && data.level > 0) DOVirtual.DelayedCall(0.3f, ShowHardIntro);
+            string title = data.level > 0 ? "Level " + data.level : data.title;
             levelLblTxt.text = title;
             RefreshHud();
             HideHand();
@@ -428,6 +441,7 @@ namespace SnakeJam
 
             if (!Save.S.tutorialDone && data.level == 1) DOVirtual.DelayedCall(1.6f, ShowHand);
             DOVirtual.DelayedCall(1.7f, () => CheckIntros(data));
+            DOVirtual.DelayedCall(2.2f, () => CheckPowerTutorial(data));
         }
 
         // power-ups unlock one by one (Undo level 3, Hint level 6, Vacuum level 10); test levels have everything
@@ -443,6 +457,7 @@ namespace SnakeJam
             UIKit.SetPillLabel(undoB, PowerLabel(Save.UndoUnlock, Save.S.undos));
             UIKit.SetPillLabel(vacB, PowerLabel(Save.VacuumUnlock, Save.S.vacuums));
             RefreshLives();
+            TutProgress();
             if (board != null && board.data != null)
             {
                 int ml = Mathf.Max(0, board.movesLeft);
@@ -505,6 +520,7 @@ namespace SnakeJam
         void OnFirstEscape()
         {
             HideHand();
+            if (tutPower < 0 && tutCard != null) tutCard.gameObject.SetActive(false);
             if (!Save.S.tutorialDone) { Save.S.tutorialDone = true; Save.Commit(); }
         }
 
@@ -547,6 +563,7 @@ namespace SnakeJam
         void ShowComplete()
         {
             if (board.data.level == 0) { ShowTestComplete(); return; }
+            HideTut();
             int lvl = board.data.level;
             bool hard = board.data.hard;
             // normal win: 50 coins + 10 per unused move (at most +30). Boss win (every 10th level): 250 coins + one random power-up.
@@ -579,8 +596,10 @@ namespace SnakeJam
             {
                 var gl = UIKit.Label(c, "+1 " + prizeName[prize], 56, new Color(1f, 0.95f, 0.6f));
                 gl.rectTransform.anchorMin = gl.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-                gl.rectTransform.anchoredPosition = new Vector2(60, -272);
-                var gi = UIKit.Icon(c, prizeIcon[prize], new Vector2(90, 90), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-130, -272));
+                gl.ForceMeshUpdate();
+                float tw = gl.preferredWidth, total = 90f + 24f + tw;
+                gl.rectTransform.anchoredPosition = new Vector2(-total / 2f + 114f + tw / 2f, -272);
+                var gi = UIKit.Icon(c, prizeIcon[prize], new Vector2(90, 90), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-total / 2f + 45f, -272));
                 gi.transform.localScale = Vector3.zero; gi.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack).SetDelay(0.9f);
             }
 
@@ -644,7 +663,7 @@ namespace SnakeJam
             if (screen != Screen.Play) return;
             if (!PowerOpen(Save.HintUnlock)) { Toast("Hint unlocks at level " + Save.HintUnlock); return; }
             if (Save.S.hints <= 0) { OfferPower(0); return; }
-            if (board.UseHint()) { Save.S.hints--; Save.Commit(); }
+            if (board.UseHint()) { Save.S.hints--; Save.Commit(); if (tutPower == 0) EndTut(0); }
             else Toast("No free snake to hint");
         }
 
@@ -654,7 +673,7 @@ namespace SnakeJam
             if (!PowerOpen(Save.UndoUnlock)) { Toast("Undo unlocks at level " + Save.UndoUnlock); return; }
             if (Save.S.undos <= 0) { OfferPower(1); return; }
             if (!board.CanUndo) { Toast("Nothing to undo"); return; }
-            if (board.UseUndo()) { Save.S.undos--; Save.Commit(); }
+            if (board.UseUndo()) { Save.S.undos--; Save.Commit(); if (tutPower == 1) EndTut(1); }
         }
 
         void OnVacuum()
@@ -663,6 +682,133 @@ namespace SnakeJam
             if (!PowerOpen(Save.VacuumUnlock)) { Toast("Vacuum unlocks at level " + Save.VacuumUnlock); return; }
             if (Save.S.vacuums <= 0) { OfferPower(2); return; }
             board.SetMode(board.mode == Board.Mode.Vacuum ? Board.Mode.Normal : Board.Mode.Vacuum);
+            if (tutPower == 2 && board.mode == Board.Mode.Vacuum)
+            {
+                tutStep = 1; tutVacBefore = Save.S.vacuums;
+                ShowTut("Now tap any snake: it is sucked out!");
+                var hs = board.FindHintSnake(); if (hs != null) HandAtWorld(hs.HeadPos);
+            }
+        }
+
+        // ======================================================= "Hard" banner: pops in for a moment at the start of a hard level
+        void ShowHardIntro()
+        {
+            if (screen != Screen.Play || hudRoot == null) return;
+            var root = UIKit.Anchored(hudRoot, "HardIntro", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -80), new Vector2(1080, 300));
+            var band = UIKit.Anchored(root, "Band", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1080, 230));
+            var bg = band.gameObject.AddComponent<Image>(); bg.color = new Color(0.82f, 0.06f, 0.1f, 0.96f); bg.raycastTarget = false;
+            band.gameObject.AddComponent<RectMask2D>();      // the small skulls stay inside the banner
+            for (int s = 0; s < 2; s++)
+            {
+                var st = UIKit.Anchored(band, "Stripe", new Vector2(0.5f, s == 0 ? 1f : 0f), new Vector2(0.5f, s == 0 ? 1f : 0f), Vector2.zero, new Vector2(1080, 30));
+                var si = st.gameObject.AddComponent<Image>(); si.sprite = Art.Stripes; si.type = Image.Type.Tiled; si.raycastTarget = false;
+            }
+            var hl = UIKit.Label(band, "Hard", 70, Color.white);
+            hl.rectTransform.anchorMin = hl.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            hl.rectTransform.anchoredPosition = new Vector2(0, -75);
+            // small white skulls float up slowly from the bottom of the banner and fade away before the top
+            for (int i = 0; i < 14; i++)
+            {
+                float size = UnityEngine.Random.Range(34f, 62f);
+                var sk = UIKit.Icon(band, "icon_gear", new Vector2(size, size), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(UnityEngine.Random.Range(-500f, 500f), -125f));
+                sk.sprite = Art.Skull; sk.color = new Color(1, 1, 1, 0.9f);
+                float dur = UnityEngine.Random.Range(1.4f, 2.2f), delay = UnityEngine.Random.Range(0f, 1.0f);
+                sk.rectTransform.DOAnchorPosY(125f, dur).SetDelay(delay).SetEase(Ease.Linear);
+                sk.DOFade(0f, dur).SetDelay(delay).SetEase(Ease.InCubic);
+            }
+            var big = UIKit.Icon(root, "icon_gear", new Vector2(220, 220), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 80));
+            big.sprite = Art.SkullBig;
+            root.localScale = new Vector3(1f, 0f, 1f);
+            big.transform.localScale = Vector3.zero;
+            var seq = DOTween.Sequence();
+            seq.Append(root.DOScaleY(1f, 0.3f).SetEase(Ease.OutBack));
+            seq.Join(big.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack).SetDelay(0.1f));
+            seq.AppendInterval(1.9f);
+            seq.Append(root.DOScaleY(0f, 0.25f).SetEase(Ease.InBack));
+            seq.OnComplete(() => { if (root != null) Destroy(root.gameObject); });
+            Destroy(root.gameObject, 5f);
+        }
+
+        // ======================================================= power-up tutorials (each power-up is taught once, on the level where it unlocks)
+        int tutPower = -1, tutStep, tutVacBefore;
+        static readonly string[] TutText = {
+            "HINT shows a snake you can tap right now. Press it!",
+            "Tap a free snake first. Then use UNDO to bring it back!",
+            "VACUUM sucks out any one snake. Press it!" };
+
+        void ShowTut(string s)
+        {
+            if (tutCard == null) return;
+            tutTxt.text = s;
+            tutCard.gameObject.SetActive(true);
+            tutCard.transform.DOKill(); tutCard.transform.localScale = Vector3.zero;
+            tutCard.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack);
+        }
+
+        void HideTut()
+        {
+            if (tutCard != null) tutCard.gameObject.SetActive(false);
+            tutPower = -1; tutStep = 0; HideHand();
+        }
+
+        // the pointing hand taps in place (no pulsing of other things)
+        void HandAtScreen(Vector2 sp)
+        {
+            if (hand == null) return;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)cv.transform, sp, cam, out var lp);
+            hand.gameObject.SetActive(true);
+            hand.rectTransform.anchoredPosition = lp;
+            hand.transform.DOKill();
+            hand.transform.localScale = Vector3.one;
+            var seq = DOTween.Sequence();
+            seq.Append(hand.transform.DOScale(0.82f, 0.18f));
+            seq.Append(hand.transform.DOScale(1f, 0.18f));
+            seq.AppendInterval(0.7f);
+            seq.SetLoops(-1);
+        }
+        void HandAtWorld(Vector3 w) { HandAtScreen(cam.WorldToScreenPoint(w)); }
+        void HandAtRect(RectTransform r) { HandAtScreen(RectTransformUtility.WorldToScreenPoint(cam, r.position)); }
+
+        void CheckPowerTutorial(LevelData data)
+        {
+            if (screen != Screen.Play || board == null || board.data != data || data.level <= 0 || tutPower >= 0) return;
+            int lvl = data.level;
+            if (lvl == 1 && !Save.S.tutorialDone) { ShowTut("Tap a snake that has a free way out. It slides away!"); return; }
+            if (lvl == 2 && !Save.S.tutorialDone) { ShowTut("If a snake bumps into another snake, it crashes. Pick a free one first!"); DOVirtual.DelayedCall(6f, () => { if (tutPower < 0 && tutCard != null) tutCard.gameObject.SetActive(false); }); return; }
+            int p = -1;
+            if (lvl >= Save.UndoUnlock && !Save.S.taughtUndo) p = 1;
+            else if (lvl >= Save.HintUnlock && !Save.S.taughtHint) p = 0;
+            else if (lvl >= Save.VacuumUnlock && !Save.S.taughtVacuum) p = 2;
+            if (p < 0) return;
+            tutPower = p; tutStep = 0;
+            if (p == 0 && Save.S.hints < 1) Save.S.hints = 1;
+            if (p == 1 && Save.S.undos < 1) Save.S.undos = 1;
+            if (p == 2 && Save.S.vacuums < 1) Save.S.vacuums = 1;
+            Save.Commit();
+            ShowTut(TutText[p]);
+            if (p == 1) { var s = board.FindHintSnake(); if (s != null) HandAtWorld(s.HeadPos); }
+            else HandAtRect((RectTransform)(p == 0 ? hintB : vacB).transform);
+        }
+
+        // called on every change: moves the lesson to its next step, or finishes it
+        void TutProgress()
+        {
+            if (tutPower < 0 || board == null) return;
+            if (tutPower == 1 && tutStep == 0 && board.CanUndo)
+            {
+                tutStep = 1;
+                ShowTut("Now press UNDO. The snake comes back!");
+                HandAtRect((RectTransform)undoB.transform);
+            }
+            if (tutPower == 2 && tutStep == 1 && Save.S.vacuums < tutVacBefore) EndTut(2);
+        }
+
+        void EndTut(int p)
+        {
+            if (p == 0) Save.S.taughtHint = true; else if (p == 1) Save.S.taughtUndo = true; else Save.S.taughtVacuum = true;
+            Save.Commit();
+            HideTut();
+            Toast("Nice! Now you know " + PowerName[p] + ".");
         }
 
         // player has none of this power-up: buy one with coins, or watch an ad for one free use (2 ads per day for all power-ups)
@@ -812,7 +958,7 @@ namespace SnakeJam
                 UIKit.Pill(c, "ADMIN LAB", "purple", new Vector2(640, 110), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -1000), () => { settings.Close(); OpenLab(); }, null, 42);
             UIKit.Pill(c, "RESET TUTORIALS", "blue", new Vector2(640, 110), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -870), () =>
             {
-                Save.S.tutorialDone = false; Save.S.zoomTutorialDone = false;
+                Save.S.tutorialDone = false; Save.S.zoomTutorialDone = false; Save.S.taughtUndo = Save.S.taughtHint = Save.S.taughtVacuum = false;
                 Save.S.seenBridge = Save.S.seenPortal = Save.S.seenDrill = Save.S.seenFrozen = Save.S.seenLight = false; Save.Commit(); Toast("Tutorials reset");
             }, "icon_undo", 38);
         }
@@ -857,7 +1003,7 @@ namespace SnakeJam
         void OpenLab()
         {
             if (lab != null && lab.dim != null) return;
-            lab = UIKit.Popup(cv, "ADMIN LAB", new Vector2(1000, 2150));
+            lab = UIKit.Popup(cv, "ADMIN LAB", new Vector2(1000, 2330));
             var c = lab.content;
             var tt = UIKit.Label(c, "Test every mechanic without playing the levels", 30, UIKit.Ink, TextAnchor.UpperCenter, false);
             tt.rectTransform.offsetMin = Vector2.zero; tt.rectTransform.offsetMax = new Vector2(0, -130);
@@ -901,7 +1047,7 @@ namespace SnakeJam
             UIKit.Pill(c, "SOUND TEST", "green", new Vector2(940, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y1 - 590), () => { lab.Close(); soundLab.Open(OpenLab); }, null, 40);
             UIKit.Pill(c, "RESET TUTORIALS", "blue", new Vector2(450, 100), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(240, y1 - 354), () =>
             {
-                Save.S.tutorialDone = false; Save.S.zoomTutorialDone = false;
+                Save.S.tutorialDone = false; Save.S.zoomTutorialDone = false; Save.S.taughtUndo = Save.S.taughtHint = Save.S.taughtVacuum = false;
                 Save.S.seenBridge = Save.S.seenPortal = Save.S.seenDrill = Save.S.seenFrozen = Save.S.seenLight = false; Save.Commit(); Toast("Tutorials reset");
             }, null, 30);
             // Feel package effects: switch them off / on, and try each one without playing a level

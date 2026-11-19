@@ -32,6 +32,7 @@ namespace SnakeJam
         public bool zoomTutorialDone = false;
         public bool seenBridge, seenPortal, seenDrill, seenFrozen, seenLight;
         public bool adminUnlimited = false;
+        public bool taughtUndo, taughtHint, taughtVacuum;   // power-up tutorials already shown
     }
 
     public static class Save

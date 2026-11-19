@@ -156,6 +156,92 @@ namespace SnakeJam
             }
         }
 
+        static Sprite skullBig, stripes;
+        // big red skull with a thick white outline (hard level banner)
+        public static Sprite SkullBig
+        {
+            get
+            {
+                if (skullBig != null) return skullBig;
+                const int N = 160;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                var red = new Color(0.93f, 0.12f, 0.14f, 1f);
+                float k = N / 64f;
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float px = (x + 0.5f) / k, py = (y + 0.5f) / k;
+                        float head = 22f - Vector2.Distance(new Vector2(px, py), new Vector2(32, 38));
+                        float jaw = Mathf.Min(Mathf.Min(px - 19f, 45f - px), Mathf.Min(py - 9f, 28f - py)) + 0.5f;
+                        float s = Mathf.Max(head, jaw);                       // > 0 inside the skull
+                        float outline = Mathf.Clamp01((s + 3.2f) * k * 0.5f + 0.5f);   // skull grown by 3 units: the white outline
+                        float inside = Mathf.Clamp01(s * k * 0.5f + 0.5f);
+                        float e1 = 5.4f - Vector2.Distance(new Vector2(px, py), new Vector2(23.5f, 37f));
+                        float e2 = 5.4f - Vector2.Distance(new Vector2(px, py), new Vector2(40.5f, 37f));
+                        float nose = Mathf.Min(Mathf.Min(py - 23f, 31f - py), (py - 23f) * 0.5f + 0.5f - Mathf.Abs(px - 32f));
+                        float hole = Mathf.Clamp01(Mathf.Max(Mathf.Max(e1, e2), nose) * k * 0.5f + 0.5f);
+                        float tooth = (Mathf.Abs(px - 28f) < 0.8f || Mathf.Abs(px - 32f) < 0.8f || Mathf.Abs(px - 36f) < 0.8f) && py < 19f && py > 10f ? 1f : 0f;
+                        Color fill = Color.Lerp(red, Color.white, Mathf.Max(hole, 0f));
+                        fill = Color.Lerp(fill, red, tooth);
+                        Color c = Color.Lerp(Color.white, fill, inside);
+                        t.SetPixel(x, y, new Color(c.r, c.g, c.b, outline));
+                    }
+                t.Apply();
+                return skullBig = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f);
+            }
+        }
+
+        // diagonal red / white hazard stripes (tile it)
+        public static Sprite Stripes
+        {
+            get
+            {
+                if (stripes != null) return stripes;
+                const int N = 48;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Repeat };
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        bool a = ((x + y) % N) < N / 2;
+                        t.SetPixel(x, y, a ? new Color(1f, 0.22f, 0.22f, 1f) : new Color(1f, 0.9f, 0.9f, 1f));
+                    }
+                t.Apply();
+                return stripes = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            }
+        }
+
+        static Sprite skull;
+        // small white skull (hard level mark)
+        public static Sprite Skull
+        {
+            get
+            {
+                if (skull != null) return skull;
+                const int N = 64;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                var dark = new Color(0.25f, 0.1f, 0.42f, 1f);
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float px = x + 0.5f, py = y + 0.5f;
+                        float head = 24f - Vector2.Distance(new Vector2(px, py), new Vector2(32, 38));
+                        float jawX = Mathf.Min(px - 20f, 44f - px), jawY = Mathf.Min(py - 8f, 26f - py);
+                        float jaw = Mathf.Min(jawX, jawY);
+                        float a = Mathf.Clamp01(Mathf.Max(head, jaw) + 0.5f);
+                        float e1 = 7f - Vector2.Distance(new Vector2(px, py), new Vector2(23, 36));
+                        float e2 = 7f - Vector2.Distance(new Vector2(px, py), new Vector2(41, 36));
+                        float nose = Mathf.Min(py - 22f, 30f - py) < 0 ? -1f : 3f - Mathf.Abs(px - 32f) * 1.2f - (py - 22f) * 0.0f;
+                        float hole = Mathf.Clamp01(Mathf.Max(Mathf.Max(e1, e2), Mathf.Min(nose, 1f)) + 0.5f);
+                        // teeth lines
+                        float tooth = (Mathf.Abs(px - 28f) < 0.7f || Mathf.Abs(px - 36f) < 0.7f) && py < 16f ? 1f : 0f;
+                        var c = Color.Lerp(Color.white, dark, Mathf.Max(hole, tooth * 0.8f));
+                        t.SetPixel(x, y, new Color(c.r, c.g, c.b, a));
+                    }
+                t.Apply();
+                return skull = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 64f);
+            }
+        }
+
         static Sprite glow;
         // soft round glow (bright centre, fades to nothing)
         public static Sprite Glow
