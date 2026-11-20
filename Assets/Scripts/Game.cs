@@ -354,9 +354,9 @@ namespace SnakeJam
             float top = SafeTop(), bottom = SafeBottom();
 
             // top row, four items with equal gaps: coins | moves + level | lives | settings
-            BuildChip(topBar, "icon_coin", new Vector2(24, -(40 + top)), new Vector2(300, 90), false, coinTexts, out hudCoinChip);
+            BuildChip(topBar, "icon_coin", new Vector2(20, -(40 + top)), new Vector2(270, 90), false, coinTexts, out hudCoinChip);
 
-            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(350, -(34 + top)), new Vector2(290, 120), Color.white, "MovesBox");
+            movesBox = UIKit.Panel(topBar, new Vector2(0, 1), new Vector2(0, 1), new Vector2(345, -(34 + top)), new Vector2(280, 120), Color.white, "MovesBox");
             UIKit.Skin(movesBox, "chip", 78, 45);
             movesTxt = UIKit.Label(movesBox.transform, "Moves: 0", 46, Color.white);
             movesTxt.rectTransform.offsetMin = new Vector2(0, 36);
@@ -431,8 +431,9 @@ namespace SnakeJam
             board.Load(data);
             ApplyTheme();
             if (data.hard) UIKit.Skin(movesBox, "pill_purple", 70, 60); else UIKit.Skin(movesBox, "chip", 78, 45);
-            if (movesSkull != null) movesSkull.gameObject.SetActive(data.hard);
+            if (movesSkull != null) movesSkull.gameObject.SetActive(false);
             HideTut();
+            snakeTut = !Save.S.tutorialDone && data.level >= 1 && data.level <= 2;
             if (data.hard && data.level > 0) DOVirtual.DelayedCall(0.3f, ShowHardIntro);
             string title = data.level > 0 ? "Level " + data.level : data.title;
             levelLblTxt.text = title;
@@ -452,7 +453,7 @@ namespace SnakeJam
             levelBannerTxt.DOFade(0f, 0.4f).SetDelay(1.4f);
             zoomBtns.gameObject.SetActive(board.NeedsZoom);
 
-            if (!Save.S.tutorialDone && data.level == 1) DOVirtual.DelayedCall(1.6f, ShowHand);
+            if (snakeTut) DOVirtual.DelayedCall(1.6f, SnakeTutStep);
             DOVirtual.DelayedCall(1.7f, () => CheckIntros(data));
             DOVirtual.DelayedCall(2.2f, () => CheckPowerTutorial(data));
         }
@@ -541,8 +542,7 @@ namespace SnakeJam
 
         void OnFirstEscape()
         {
-            HideHand();
-            if (tutPower < 0 && tutCard != null) tutCard.gameObject.SetActive(false);
+            if (!snakeTut) { HideHand(); if (tutPower < 0 && tutCard != null) tutCard.gameObject.SetActive(false); }
             if (!Save.S.tutorialDone) { Save.S.tutorialDone = true; Save.Commit(); }
         }
 
@@ -604,7 +604,7 @@ namespace SnakeJam
             var rt = UIKit.Label(rib, "", 84, Color.white);
             rt.rectTransform.offsetMin = new Vector2(0, 20); rt.rectTransform.offsetMax = new Vector2(0, 20);
             rib.localScale = Vector3.zero; rib.DOScale(1f, 0.4f).SetEase(Ease.OutBack);
-            UIKit.Type(rt, "COMPLETE", 0.6f).SetDelay(0.3f).SetEase(Ease.Linear);     // typed out
+            UIKit.Type(rt, "ALL CLEAR", 0.6f).SetDelay(0.3f).SetEase(Ease.Linear);     // typed out
 
             var glow = UIKit.Icon(c, "icon_gear", new Vector2(900, 900), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 0));
             glow.sprite = Art.Glow; glow.color = new Color(1f, 0.82f, 0.25f, 0.8f);
@@ -709,7 +709,7 @@ namespace SnakeJam
             {
                 tutStep = 1; tutVacBefore = Save.S.vacuums;
                 ShowTut("Now tap any snake: it is sucked out!");
-                var hs = board.FindHintSnake(); if (hs != null) HandAtWorld(hs.HeadPos);
+                var hs = board.FindHintSnake(); board.SetDimAll(hs); FocusBtn(-2); if (hs != null) HandAtWorld(hs.HeadPos);
             }
         }
 
@@ -766,6 +766,34 @@ namespace SnakeJam
         {
             if (tutCard != null) tutCard.gameObject.SetActive(false);
             tutPower = -1; tutStep = 0; HideHand();
+            snakeTut = false; tutSnake = null;
+            if (board != null) board.ClearDim();
+            FocusBtn(-1);
+        }
+
+        // levels 1 and 2: the hand and the light point at the next free snake, again and again, until the level is done
+        bool snakeTut; SnakeView tutSnake;
+        void SnakeTutStep()
+        {
+            if (!snakeTut || screen != Screen.Play || board == null) return;
+            var s = board.FindHintSnake();
+            if (s == tutSnake && tutSnake != null) return;
+            tutSnake = s;
+            if (s == null) { board.SetDimAll(null); HideHand(); return; }
+            board.SetDimAll(s);
+            HandAtWorld(s.HeadPos);
+        }
+
+        // tutorial: k = power-up button to keep bright (0 hint, 1 undo, 2 vacuum), -2 = grey all, -1 = all normal
+        void FocusBtn(int k)
+        {
+            var bs = new Button[] { hintB, undoB, vacB };
+            for (int i = 0; i < 3; i++)
+            {
+                if (bs[i] == null) continue;
+                var cg = bs[i].GetComponent<CanvasGroup>(); if (cg == null) cg = bs[i].gameObject.AddComponent<CanvasGroup>();
+                cg.alpha = (k == -1 || i == k) ? 1f : 0.3f;
+            }
         }
 
         // the pointing hand taps in place (no pulsing of other things)
@@ -803,17 +831,19 @@ namespace SnakeJam
             if (p == 2 && Save.S.vacuums < 1) Save.S.vacuums = 1;
             Save.Commit();
             ShowTut(TutText[p]);
-            if (p == 1) { var s = board.FindHintSnake(); if (s != null) HandAtWorld(s.HeadPos); }
-            else HandAtRect((RectTransform)(p == 0 ? hintB : vacB).transform);
+            if (p == 1) { var s = board.FindHintSnake(); board.SetDimAll(s); FocusBtn(-2); if (s != null) HandAtWorld(s.HeadPos); }
+            else { board.SetDimAll(null); FocusBtn(p); HandAtRect((RectTransform)(p == 0 ? hintB : vacB).transform); }
         }
 
         // called on every change: moves the lesson to its next step, or finishes it
         void TutProgress()
         {
+            SnakeTutStep();
             if (tutPower < 0 || board == null) return;
             if (tutPower == 1 && tutStep == 0 && board.CanUndo)
             {
                 tutStep = 1;
+                board.SetDimAll(null); FocusBtn(1);
                 ShowTut("Now press UNDO. The snake comes back!");
                 HandAtRect((RectTransform)undoB.transform);
             }

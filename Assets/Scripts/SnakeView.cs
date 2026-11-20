@@ -410,6 +410,10 @@ namespace SnakeJam
         }
 
         // colour of piece j for the current skin: plain colour, rainbow (violet head -> red tail) or zebra stripes
+        bool dimmed;
+        // tutorial: grey out snakes that are not the one being taught
+        public void SetDim(bool d) { if (dimmed == d) return; dimmed = d; RecolorPieces(); }
+
         Color BaseC(int j)
         {
             int kind = Palette.SkinKind(Save.S.skin);
@@ -418,7 +422,9 @@ namespace SnakeJam
             if (kind == 1) c = Color.HSVToRGB(Mathf.Lerp(0.78f, 0f, j / (float)(m - 1)), 0.88f, 1f);
             else if (kind == 2) c = (j < 2 || (j / 2) % 2 == 0) ? new Color(0.08f, 0.08f, 0.1f) : new Color(0.96f, 0.96f, 0.96f);
             else c = color;
-            return frozenLeft > 0 ? Color.Lerp(Color.white, c, 0.3f) : c;
+            if (frozenLeft > 0) c = Color.Lerp(Color.white, c, 0.3f);
+            if (dimmed) { c = Color.Lerp(c, new Color(0.72f, 0.72f, 0.74f, c.a), 0.8f); }
+            return c;
         }
 
         void ApplyPieceColor(int j)

@@ -640,6 +640,10 @@ namespace SnakeJam
         }
 
         // ------------------------------------------------------------------ power ups
+        // tutorial: every snake is greyed out except 'keep' (null = grey out all)
+        public void SetDimAll(SnakeView keep) { foreach (var s in active) s.SetDim(s != keep); }
+        public void ClearDim() { foreach (var s in active) s.SetDim(false); }
+
         public SnakeView FindHintSnake()
         {
             var cands = new List<SnakeView>();
