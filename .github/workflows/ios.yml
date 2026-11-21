@@ -1,0 +1,117 @@
+name: iOS build
+
+# The Xcode project is made on the developer PC (Unity > iOS) and uploaded as release asset xcode-project.tgz on tag ios-xcode.
+# This workflow only needs a Mac: it builds the .ipa and sends it to TestFlight.
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "Send the build to TestFlight (App Store Connect)?"
+        type: boolean
+        default: true
+
+jobs:
+  mac:
+    name: Mac - build and upload
+    permissions:
+      contents: read
+    runs-on: macos-15
+    steps:
+      - name: Download Xcode project
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download ios-xcode -p xcode-project.tgz --repo ${{ github.repository }}
+
+      - name: Unpack
+        run: |
+          mkdir proj && tar -xzf xcode-project.tgz -C proj
+          ls proj
+
+      - name: Save App Store Connect key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Add AdMob to Info.plist
+        working-directory: proj
+        run: |
+          /usr/libexec/PlistBuddy -c "Delete :GADApplicationIdentifier" Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :GADApplicationIdentifier string ca-app-pub-2778983812131153~7478864219" Info.plist
+          /usr/libexec/PlistBuddy -c "Print :GADApplicationIdentifier" Info.plist
+
+      - name: Install Pods (Google ads)
+        working-directory: proj
+        run: |
+          cat > Podfile <<'EOF'
+          source 'https://cdn.cocoapods.org/'
+          platform :ios, '15.0'
+          use_frameworks! :linkage => :static
+          target 'UnityFramework' do
+            pod 'Google-Mobile-Ads-SDK', '~> 13.12'
+            pod 'GoogleUserMessagingPlatform', '3.1.0'
+          end
+          target 'Unity-iPhone' do
+          end
+          EOF
+          sed -i '' 's/^          //' Podfile
+          cat Podfile
+          pod install --repo-update
+
+      - name: Archive
+        working-directory: proj
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -d Unity-iPhone.xcworkspace ]; then TARGET="-workspace Unity-iPhone.xcworkspace"; else TARGET="-project Unity-iPhone.xcodeproj"; fi
+          xcodebuild $TARGET -scheme Unity-iPhone -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            archive
+
+      - name: Export ipa
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportPath "$RUNNER_TEMP/ipa" -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          ls "$RUNNER_TEMP/ipa"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SlitherEscape-ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          retention-days: 14
+
+      - name: Upload to TestFlight
+        if: ${{ inputs.upload }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcrun altool --upload-app --type ios -f "$RUNNER_TEMP"/ipa/*.ipa \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
