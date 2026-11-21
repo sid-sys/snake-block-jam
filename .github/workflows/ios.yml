@@ -15,7 +15,7 @@ jobs:
     name: Mac - build and upload
     permissions:
       contents: read
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Download Xcode project
         env:
