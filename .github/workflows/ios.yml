@@ -17,6 +17,13 @@ jobs:
       contents: read
     runs-on: macos-26
     steps:
+      - name: Check Xcode is version 26 or newer (Apple rule)
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i "iOS 2"
+          major=$(xcodebuild -version | head -1 | sed -E 's/Xcode ([0-9]+).*/\1/')
+          if [ "$major" -lt 26 ]; then echo "Xcode $major is too old. Need 26 or newer."; exit 1; fi
+
       - name: Download Xcode project
         env:
           GH_TOKEN: ${{ github.token }}
